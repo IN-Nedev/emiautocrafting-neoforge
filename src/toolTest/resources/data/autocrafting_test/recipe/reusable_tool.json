@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "TI"
+  ],
+  "key": {
+    "T": {
+      "item": "autocrafting_test:test_stamp"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "minecraft:gold_nugget",
+    "count": 1
+  }
+}

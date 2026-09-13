@@ -1,0 +1,6 @@
+SHA-256 of pinned runtime/review/wrapper artifacts (not a complete transitive dependency lock):
+
+b68691f94f0727fc517cac2ab55bd6658d1179cc8cc715fe610b60c37469bc4c  dev.emi:emi-neoforge:1.1.24+1.21.1 (runtime JAR)
+59c09da6f1898392fb2bec1a398ac2c84bfb1b8d376fed968aa73c1a9dcc2289  dev.emi:emi-neoforge:1.1.24+1.21.1:sources (Mojang-mapped review source)
+7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172  gradle/wrapper/gradle-wrapper.jar
+72f44c9f8ebcb1af43838f45ee5c4aa9c5444898b3468ab3f4af7b6076c5bc3f  gradle-9.2.1-bin.zip

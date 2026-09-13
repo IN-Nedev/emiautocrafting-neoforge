@@ -1,0 +1,29 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="GPL-3.0-only"
+[[mods]]
+modId="emiautocrafting"
+version="${version}"
+displayName="EMI Autocrafting"
+authors="digestlotion; 1.21.1 port contributors"
+description='''Finite, inventory-aware crafting jobs for EMI recipe trees. Client-side.'''
+[[dependencies.emiautocrafting]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.250,21.2)"
+ordering="NONE"
+side="CLIENT"
+[[dependencies.emiautocrafting]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+ordering="NONE"
+side="CLIENT"
+[[dependencies.emiautocrafting]]
+modId="emi"
+type="required"
+versionRange="[1.1.24+1.21.1+neoforge]"
+ordering="AFTER"
+side="CLIENT"
+[[mixins]]
+config="emiautocrafting.mixins.json"

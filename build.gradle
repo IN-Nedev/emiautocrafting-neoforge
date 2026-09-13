@@ -1,0 +1,64 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+group = 'com.example.emiautocrafting'
+version = mod_version
+base { archivesName = 'emiautocrafting-neoforge-1.21.1' }
+java { toolchain.languageVersion = JavaLanguageVersion.of(21); withSourcesJar() }
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.sleeping.town'; content { includeGroup 'dev.emi' } }
+}
+neoForge {
+    version = neo_version
+    runs {
+        client { client(); jvmArguments.addAll '-Xms256m', '-Xmx1536m' }
+        server { server(); jvmArguments.addAll '-Xms256m', '-Xmx1024m'; programArgument '--nogui'; gameDirectory = file(project.findProperty('serverDir') ?: 'run-server') }
+    }
+    mods { emiautocrafting { sourceSet(sourceSets.main) } }
+}
+dependencies {
+    implementation "dev.emi:emi-neoforge:${emi_version}"
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 21 }
+tasks.named('test') { useJUnitPlatform() }
+tasks.named('processResources') {
+    inputs.property 'version', project.version
+    filesMatching('META-INF/neoforge.mods.toml') { expand version: project.version }
+}
+tasks.named('jar') { from('LICENSE'); from('NOTICE.md') }
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+// Opt-in runtime harness; never included in the release JAR.
+if (project.hasProperty('integration')) {
+    sourceSets { testMod }
+    tasks.named('processTestModResources') { doFirst { delete destinationDir } }
+    if (project.hasProperty('toolFixtures')) sourceSets.testMod.resources.srcDir 'src/toolTest/resources'
+    configurations.testModImplementation.extendsFrom configurations.implementation
+    sourceSets.testMod.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+    sourceSets.testMod.runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    neoForge.mods { autocrafting_test { sourceSet(sourceSets.testMod) } }
+    neoForge.runs.client {
+        systemProperty 'emiautocrafting.integration', 'true'
+        systemProperty 'emiautocrafting.toolFixtures', project.hasProperty('toolFixtures').toString()
+        systemProperty 'emiautocrafting.testMode', project.findProperty('testMode') ?: 'integrated'
+        systemProperty 'emiautocrafting.testPort', project.findProperty('testPort') ?: '25565'
+        systemProperty 'emiautocrafting.testFilter', project.findProperty('testFilter') ?: 'all'
+        programArguments.addAll '--username', 'AutocraftTest', '--width', '1000', '--height', '700'
+    }
+}
+if (project.hasProperty('serverWithoutEmi')) {
+    configurations.runtimeClasspath.exclude group: 'dev.emi'
+}
+
+if (project.hasProperty('serverOnly')) {
+    sourceSets { serverRuntime { runtimeClasspath = configurations.runtimeClasspath } }
+    neoForge.runs.server { loadedMods = []; sourceSet = sourceSets.serverRuntime }
+}

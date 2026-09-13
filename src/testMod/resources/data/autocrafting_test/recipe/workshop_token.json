@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["PP", "PC"],
+  "key": {"P": {"tag": "minecraft:planks"}, "C": {"item": "minecraft:copper_ingot"}},
+  "result": {"id": "minecraft:compass", "count": 1, "components": {"minecraft:custom_name": "\"Workshop token\"", "minecraft:custom_data": {"autocrafting_test": 1}}}
+}

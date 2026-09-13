@@ -1,0 +1,19 @@
+PATH mode=dedicated-no-emi-latency EMI server=false
+PASS keyboard_event_text_focus (vanilla EditBox and EMI search)
+PASS quantity_dialog_enter_keeps_recipe_and_item_total
+PASS logs_to_pickaxe state=COMPLETED count=1 status=Completed
+PASS existing_intermediates state=COMPLETED count=1 status=Completed
+PASS existing_final_total state=COMPLETED count=2 status=Completed
+PASS multi_output_surplus state=COMPLETED count=8 status=Completed
+PASS missing_base state=BLOCKED count=0 status=Missing: 2 Oak Log (select a preferred recipe in EMI if it should be crafted)
+PASS returned_buckets state=COMPLETED count=1 status=Completed
+PASS player_2x2 state=COMPLETED count=4 status=Completed
+PASS modded_components_alternative state=COMPLETED count=2 status=Completed
+PASS full_inventory state=BLOCKED count=0 status=Not enough space for the output
+PASS preexisting_grid state=BLOCKED count=0 status=Clear the crafting grid before starting
+PASS occupied_cursor state=BLOCKED count=0 status=Put the cursor stack away before crafting
+PASS single_step state=COMPLETED count=4 status=Single step completed; crafted items were retained
+PASS changed_tree state=CANCELLED count=0 status=Cancelled; menu or recipe tree changed. Completed items were retained.
+PASS closed_gui state=CANCELLED count=0 status=Cancelled; menu or recipe tree changed. Completed items were retained.
+PASS server_rejects state=BLOCKED count=0 status=Server response timed out; reopen the menu before retrying
+PASS player_requires_3x3 state=BLOCKED count=0 status=Requires a 3×3 crafting table

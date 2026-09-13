@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.emiautocrafting.core.JobControllerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-13T16:16:04.430Z" hostname="Ivans-MacBook-Air.local" time="0.04">
+  <properties/>
+  <testcase name="onlyConfirmationAllowsReplanAndPacing()" classname="com.example.emiautocrafting.core.JobControllerTest" time="0.014"/>
+  <testcase name="cancellationRetainsPendingOperationWithoutRepeatingIt()" classname="com.example.emiautocrafting.core.JobControllerTest" time="0.001"/>
+  <testcase name="rejectedCraftCannotComplete()" classname="com.example.emiautocrafting.core.JobControllerTest" time="0.002"/>
+  <testcase name="exceptionDoesNotLeaveAnActiveLock()" classname="com.example.emiautocrafting.core.JobControllerTest" time="0.004"/>
+  <testcase name="closingGuiStopsFutureDispatch()" classname="com.example.emiautocrafting.core.JobControllerTest" time="0.001"/>
+  <testcase name="noDuplicateWithLatencyOrRepeatedStart()" classname="com.example.emiautocrafting.core.JobControllerTest" time="0.001"/>
+  <testcase name="timeoutStopsWithoutRetry()" classname="com.example.emiautocrafting.core.JobControllerTest" time="0.001"/>
+  <testcase name="singleStepStopsAfterOneConfirmedCraft()" classname="com.example.emiautocrafting.core.JobControllerTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

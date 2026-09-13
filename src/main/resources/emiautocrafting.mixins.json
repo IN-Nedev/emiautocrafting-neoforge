@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.example.emiautocrafting.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ClientPacketListenerMixin",
+    "RecipeBookComponentAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
