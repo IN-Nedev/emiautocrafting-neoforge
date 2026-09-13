@@ -1,0 +1,10 @@
+PATH mode=packaged-vanilla EMI server=true
+PASS packaged_addon_loaded source=union:/Users/ivannedev/Documents/Codex/2026-09-13/minecraft-mod/outputs/emiautocrafting/build/libs/emiautocrafting-neoforge-1.21.1-2.0.0-beta.2.jar%23189!/
+PASS keyboard_event_text_focus (vanilla EditBox and EMI search)
+PASS quantity_dialog_enter_keeps_recipe_and_item_total
+PASS logs_to_pickaxe state=COMPLETED count=1 status=Completed
+PASS returned_buckets state=COMPLETED count=1 status=Completed
+PASS player_four_input_shapeless state=COMPLETED count=1 status=Completed
+PASS reusable_tool state=COMPLETED count=4 status=Completed
+PASS damageable_tool_breaks state=BLOCKED count=3 status=Missing: 1 item.autocrafting_test.test_hammer (select a preferred recipe in EMI if it should be crafted)
+PASS disconnect state=CANCELLED; future actions stopped

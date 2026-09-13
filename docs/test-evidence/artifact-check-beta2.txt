@@ -1,0 +1,12 @@
+PASS release JAR: emiautocrafting-neoforge-1.21.1-2.0.0-beta.2.jar
+Size: 74946 bytes
+SHA256: 794e628fd4df321044bdbe16fe49228cb9e8d4ef0833fc7b98221a9d4e1a4b79
+PASS 28 class files use Java 21 (major 65)
+PASS NeoForge 21.1.249 floor, exact Minecraft 1.21.1 and EMI 1.1.24 dependency
+PASS GPL license, notice, mixins and optional KubeJS boundary included
+PASS test code, pack recipes and third-party mod classes excluded
+PASS 31 JUnit tests, zero failures/errors
+('com.example.emiautocrafting.core.ControlsTest', 3, 0, 0)
+('com.example.emiautocrafting.core.JobControllerTest', 8, 0, 0)
+('com.example.emiautocrafting.core.QuantitiesTest', 5, 0, 0)
+('com.example.emiautocrafting.core.TreePlannerTest', 15, 0, 0)

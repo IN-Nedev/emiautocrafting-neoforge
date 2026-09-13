@@ -1,0 +1,31 @@
+PATH mode=packaged-pack EMI server=true
+PASS packaged_addon_loaded source=union:/Users/ivannedev/Documents/Codex/2026-09-13/minecraft-mod/outputs/emiautocrafting/build/libs/emiautocrafting-neoforge-1.21.1-2.0.0-beta.2.jar%23199!/
+PASS keyboard_event_text_focus (vanilla EditBox and EMI search)
+PASS quantity_dialog_enter_keeps_recipe_and_item_total
+PASS logs_to_pickaxe state=COMPLETED count=1 status=Completed
+PASS existing_intermediates state=COMPLETED count=1 status=Completed
+PASS existing_final_total state=COMPLETED count=2 status=Completed
+PASS multi_output_surplus state=COMPLETED count=8 status=Completed
+PASS missing_base state=BLOCKED count=0 status=Missing: 2 Oak Log (select a preferred recipe in EMI if it should be crafted)
+PASS returned_buckets state=COMPLETED count=1 status=Completed
+PASS player_2x2 state=COMPLETED count=4 status=Completed
+PASS modded_components_alternative state=COMPLETED count=2 status=Completed
+PASS full_inventory state=BLOCKED count=0 status=Not enough space for the output
+PASS preexisting_grid state=BLOCKED count=0 status=Clear the crafting grid before starting
+PASS occupied_cursor state=BLOCKED count=0 status=Put the cursor stack away before crafting
+PASS single_step state=COMPLETED count=4 status=Single step completed; crafted items were retained
+PASS changed_tree state=CANCELLED count=0 status=Cancelled; menu or recipe tree changed. Completed items were retained.
+PASS closed_gui state=CANCELLED count=0 status=Cancelled; menu or recipe tree changed. Completed items were retained.
+PASS server_rejects state=BLOCKED count=0 status=Server response timed out; reopen the menu before retrying
+PASS player_four_input_shapeless state=COMPLETED count=1 status=Completed
+PASS player_requires_3x3 state=BLOCKED count=0 status=Requires a 3×3 crafting table
+PASS pack_furnace_shared_stock state=COMPLETED count=1 status=Completed
+PASS pack_furnace_existing state=COMPLETED count=2 status=Completed
+PASS pack_piston_chain state=COMPLETED count=3 status=Completed
+PASS pack_missing_machine state=BLOCKED count=0 status=Requires an unsupported machine: Andesite Alloy
+PASS pack_scripted_remainder state=BLOCKED count=0 status=KubeJS ingredient actions or output scripts are unsupported
+PASS pack_scripted_output state=BLOCKED count=0 status=KubeJS ingredient actions or output scripts are unsupported
+PASS pack_plain_shapeless state=COMPLETED count=1 status=Completed
+PASS pack_station_guard rejected unsupported station before any inventory operation
+PASS recipe_reload state=CANCELLED count=0 status=Cancelled; menu or recipe tree changed. Completed items were retained.
+PASS disconnect state=CANCELLED; future actions stopped

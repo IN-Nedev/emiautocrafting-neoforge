@@ -4,7 +4,11 @@
 
 `MenuPort` accepts only exact vanilla CraftingMenu/InventoryMenu and EMI's exact built-in crafting handlers. It projects an exact one-execution ingredient choice, checks the real shaped/shapeless recipe and selected recipe ID, assembles the expected output and remainders, and reserves space. Shapeless grid-size behaviour is preserved in the exact-ingredient projection.
 
+`CraftingCompatibility` admits the exact vanilla recipe classes and the exact known KubeJS shaped/shapeless wrapper classes with the expected vanilla superclass. For KubeJS it reads public accessors through reflection, requiring an empty ingredient-action list and empty output-modifier string before assembly or remainder evaluation. Unknown wrappers or accessor failures are rejected. KubeJS is not a required dependency. The original recipe still performs matching, so its mirroring rules are retained.
+
 `JobController` is pure Java and advances on client ticks. Synchronization and remainder-clear operations use the same waiting state but do not count as a crafted step. A confirmed execution is followed by a fresh plan; no loop runs inside a key callback.
+
+The client logout event cancels immediately and clears held-shortcut tracking; cancellation does not depend on a later world tick after disconnect.
 
 ```mermaid
 stateDiagram-v2

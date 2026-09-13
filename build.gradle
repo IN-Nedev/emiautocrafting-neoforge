@@ -48,7 +48,7 @@ if (project.hasProperty('integration')) {
     neoForge.runs.client {
         systemProperty 'emiautocrafting.integration', 'true'
         systemProperty 'emiautocrafting.toolFixtures', project.hasProperty('toolFixtures').toString()
-        systemProperty 'emiautocrafting.testMode', project.findProperty('testMode') ?: 'integrated'
+        systemProperty 'emiautocrafting.testMode', project.findProperty('testMode') ?: (project.hasProperty('packCompatibility') ? 'pack-compatibility' : 'integrated')
         systemProperty 'emiautocrafting.testPort', project.findProperty('testPort') ?: '25565'
         systemProperty 'emiautocrafting.testFilter', project.findProperty('testFilter') ?: 'all'
         programArguments.addAll '--username', 'AutocraftTest', '--width', '1000', '--height', '700'
@@ -61,4 +61,48 @@ if (project.hasProperty('serverWithoutEmi')) {
 if (project.hasProperty('serverOnly')) {
     sourceSets { serverRuntime { runtimeClasspath = configurations.runtimeClasspath } }
     neoForge.runs.server { loadedMods = []; sourceSet = sourceSets.serverRuntime }
+}
+
+// Opt-in, pinned crafting-stack sample from Impostor Syndrome - Reimagined 0.6-hotfix.
+// No pack assets or scripts, optional mods, or test fixtures enter the published mod JAR.
+if (project.hasProperty('packCompatibility')) {
+    if (!project.hasProperty('integration')) throw new GradleException('packCompatibility requires -Pintegration')
+    repositories { maven { url = 'https://cursemaven.com'; content { includeGroup 'curse.maven' } } }
+    dependencies {
+        runtimeOnly 'curse.maven:jei-238222:8732390'
+        runtimeOnly 'curse.maven:kubejs-238086:8715199'
+        runtimeOnly 'curse.maven:rhino-416294:8463898'
+        runtimeOnly 'curse.maven:architectury-api-419699:8492726'
+        runtimeOnly 'curse.maven:crafting-tweaks-233071:8697050'
+        runtimeOnly 'curse.maven:balm-531761:8645517'
+        runtimeOnly 'curse.maven:polymorph-plus-1586874:8750431'
+        runtimeOnly 'curse.maven:allthecompressed-514045:7361502'
+        runtimeOnly 'curse.maven:create-328085:7963363'
+        runtimeOnly 'curse.maven:crafting-station-jei-edition-updated-1127715:7932261'
+    }
+    def packDirectory = file(project.hasProperty('packagedTest') ? 'run-packaged' : 'run-pack')
+    neoForge.runs.client {
+        gameDirectory = packDirectory
+        jvmArguments.add '-Xmx2048m'
+        systemProperty 'emiautocrafting.packCompatibility', 'true'
+    }
+    tasks.register('preparePackCompatibility', Copy) {
+        from 'src/packTest/kubejs'
+        into new File(packDirectory, 'kubejs')
+    }
+    tasks.named('runClient') { dependsOn 'preparePackCompatibility' }
+}
+
+// Verify the distributable itself, with production classes absent from the development mod paths.
+if (project.hasProperty('packagedTest')) {
+    if (!project.hasProperty('integration')) throw new GradleException('packagedTest requires -Pintegration')
+    sourceSets.testMod.runtimeClasspath = sourceSets.testMod.output + configurations.testModRuntimeClasspath +
+        (sourceSets.main.runtimeClasspath - sourceSets.main.output) + files(tasks.named('jar'))
+    neoForge.runs.client {
+        sourceSet = sourceSets.testMod
+        loadedMods = [neoForge.mods.autocrafting_test]
+        gameDirectory = file('run-packaged')
+        systemProperty 'emiautocrafting.packagedTest', 'true'
+    }
+    tasks.named('runClient') { dependsOn 'jar' }
 }

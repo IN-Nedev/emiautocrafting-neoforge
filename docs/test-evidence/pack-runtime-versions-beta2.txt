@@ -1,0 +1,34 @@
+     Mod List:
+		Name Version (Mod Id)
+
+		AllTheCompressed 4.4.0 (allthecompressed)
+		Architectury 13.0.11 (architectury)
+		Balm 21.0.65 (balm)
+		Better Advanced Tooltips 2101.1.0-build.1 (betteradvancedtooltips)
+		Crafting Station 2.1.1 (craftingstation)
+		Crafting Tweaks 21.1.11 (craftingtweaks)
+		Create 6.0.10 (create)
+		EMI 1.1.24+1.21.1+neoforge (emi)
+		EMI Autocrafting 2.0.0-beta.2 (emiautocrafting)
+		EMI Autocrafting Runtime Tests (development only) 1.0.0 (autocrafting_test)
+		Flywheel 1.0.6 (flywheel)
+		Just Enough Items 19.44.0.405 (jei)
+		KubeJS 2101.7.2-build.374 (kubejs)
+		KumaAPI 21.0.8 (kuma_api)
+		Minecraft 1.21.1 (minecraft)
+		NeoForge 21.1.249 (neoforge)
+		Polymorph+ 1.3.1+1.21.1 (polymorph_plus)
+		Ponder 1.0.82+mc1.21.1 (ponder)
+		Rhino 2101.2.8-build.91 (rhino)
+
+[PACK RECIPE] minecraft:furnace raw=dev.latvian.mods.kubejs.recipe.special.ShapedKubeJSRecipe
+[PACK RECIPE] minecraft:furnace raw=dev.latvian.mods.kubejs.recipe.special.ShapedKubeJSRecipe
+[PACK RECIPE] minecraft:piston raw=dev.latvian.mods.kubejs.recipe.special.ShapedKubeJSRecipe
+[PACK RECIPE] minecraft:piston raw=dev.latvian.mods.kubejs.recipe.special.ShapedKubeJSRecipe
+[PACK RECIPE] autocrafting_test:scripted_remainder raw=dev.latvian.mods.kubejs.recipe.special.ShapelessKubeJSRecipe
+[PACK RECIPE] autocrafting_test:scripted_output raw=dev.latvian.mods.kubejs.recipe.special.ShapelessKubeJSRecipe
+[PACK RECIPE] autocrafting_test:plain_kubejs_shapeless raw=dev.latvian.mods.kubejs.recipe.special.ShapelessKubeJSRecipe
+[PACK RECIPE] minecraft:oak_planks raw=net.minecraft.world.item.crafting.ShapelessRecipe
+BUILD SUCCESSFUL in 2m 48s
+EMI duplicate recipe-ID warnings: 4704
+Synthetic toolbox recipe warnings: 60

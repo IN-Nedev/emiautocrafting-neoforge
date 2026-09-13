@@ -6,11 +6,13 @@ A GPL-3.0-only derivative of digestlotion's emiautocrafting addon. Prepare one E
 
 ## Install
 
-Use Java 21, **Minecraft 1.21.1**, **NeoForge 21.1.250**, and **EMI 1.1.24+1.21.1 for NeoForge**. EMI displays its installed version as `1.1.24+1.21.1+neoforge`. The addon intentionally pins this release because it uses EMI internals.
+Use Java 21, **Minecraft 1.21.1**, **NeoForge 21.1.249 or later in the 21.1 series**, and **EMI 1.1.24+1.21.1 for NeoForge**. EMI displays its installed version as `1.1.24+1.21.1+neoforge`. The addon intentionally pins this EMI release because it uses EMI internals. Beta 2 is built against NeoForge 21.1.249, matching Impostor Syndrome – Reimagined 0.6-hotfix.
 
-Use this port instead of the original emiautocrafting JAR. Put EMI and `emiautocrafting-neoforge-1.21.1-2.0.0-beta.1.jar` in the **client's** `mods` folder. Do not install the sources JAR or the runtime-test mod. The addon is not required on a dedicated server. EMI on the server is optional: the addon uses EMI's server-assisted fill when available and its ordinary container-click fallback otherwise.
+Use this port instead of the original emiautocrafting JAR. Put EMI and `emiautocrafting-neoforge-1.21.1-2.0.0-beta.2.jar` in the **client's** `mods` folder. Replace any older addon JAR. Do not install the sources JAR or the runtime-test mod. The addon is not required on a dedicated server. EMI on the server is optional: the addon uses EMI's server-assisted fill when available and its ordinary container-click fallback otherwise.
 
 No dependency on Tom's Storage, AE2, Refined Storage, Architectury, Fabric or JEI is included.
+
+For Impostor Syndrome – Reimagined, keep the pack's JEI and add EMI separately. See [pack installation and compatibility](docs/PACK-COMPATIBILITY.md) for the tested sample and limits. The complete pack has not been run on the test machine.
 
 ## Use
 
@@ -32,12 +34,13 @@ A click during a job cancels future actions so you can take over. Closing the sc
 
 - Vanilla 3×3 crafting tables and player inventory 2×2 grids; a larger step explains that a crafting table is required.
 - Normal shaped and shapeless recipes, including datapack/mod recipes that use these standard recipe classes. Real recipe matching, assembled output, ingredient components and remaining-item behaviour are checked. Deterministic reusable/damageable-tool remainders are supported inside these standard recipes and were checked using isolated test fixtures.
+- KubeJS's known shaped/shapeless wrappers are also accepted when their ingredient-action list and output-modifier name are empty. Actual recipe matching still applies, including non-mirrored patterns. Scripted outputs and ingredient actions remain unsupported; KubeJS is optional.
 - One tree, a positive total up to 1,000,000,000 items, bounded depth/node count and at most 100,000 confirmed recipe executions per run. Arithmetic that exceeds long limits stops the job. Only one recipe execution is dispatched at a time.
 - Main inventory/hotbar materials are accessible. Armour/offhand and external storage are excluded.
 - Space checks are deliberately conservative: reserve capacity for output and returned items **before** consuming inputs. A nearly full inventory may be refused even when consumption would free space.
 - The initial grid must be empty. Returned containers may remain in the grid on completion; they are retained, and normal grid cleanup occurs before another step if needed.
 - Existing inputs from an unsupported machine can be used. Missing machine production blocks the tree.
-- Custom/dynamic/chance-based recipe classes, arbitrary damageable-tool recipes, processing machines, storage terminals and network crafting jobs are not supported. A modded item with a deterministic remainder inside an ordinary shaped/shapeless recipe still uses the real recipe's remainder method, but broad tool compatibility is not claimed.
+- Other custom/dynamic/chance-based recipe classes, arbitrary damageable-tool recipes, processing machines, storage terminals and network crafting jobs are not supported. A modded item with a deterministic remainder inside an ordinary shaped/shapeless recipe still uses the real recipe's remainder method, but broad tool compatibility is not claimed.
 - No Tom's Storage, AE2 or Refined Storage adapters, pattern creation or multi-goal planner are included. JEI transfer-only handlers are not accepted as immediate crafting handlers.
 - Servers that change normal 1.21.1 menu synchronization may reject or time out the snapshot check. The addon stops instead of repeatedly sending an uncertain craft.
 - Planning requires enough currently accessible base materials for the remaining tree before proceeding; it does not deliberately spend materials on a known-incomplete plan.
@@ -57,8 +60,9 @@ Windows: `gradlew.bat build`. Gradle downloads the pinned dependencies. Release 
 ./gradlew runServer
 ./gradlew -Pintegration runClient
 ./gradlew -Pintegration -PtoolFixtures runClient
+./gradlew -Pintegration -PpackCompatibility runClient
 ```
 
-The toolFixtures option adds isolated test items and tool recipes to the integrated test world only. Do not enable it when connecting to a server without those fixtures. The opt-in integration run creates disposable test worlds and executes the development harness in `src/testMod`. It is excluded from release artifacts. Dedicated test runs use `-PserverOnly -PserverDir=/absolute/test/server`, and optionally `-PserverWithoutEmi`; the companion client uses `-Pintegration -PtestMode=dedicated-emi` or `dedicated-no-emi`. A local offline test server, operator permissions for `AutocraftTest`, and the included fixture datapack are needed for the harness commands. Do not use the harness against an existing personal world or public server.
+The toolFixtures option adds isolated test items and tool recipes to the integrated test world only. Do not enable it when connecting to a server without those fixtures. The packCompatibility option downloads a pinned sample of the pack's crafting mods and copies independently authored recipe fixtures into `run-pack/kubejs`; it does not install the full pack. The opt-in integration run creates disposable test worlds and executes the development harness in `src/testMod`. It is excluded from release artifacts. Dedicated test runs use `-PserverOnly -PserverDir=/absolute/test/server`, and optionally `-PserverWithoutEmi`; the companion client uses `-Pintegration -PtestMode=dedicated-emi` or `dedicated-no-emi`. A local offline test server, operator permissions for `AutocraftTest`, and the included fixture datapack are needed for the harness commands. Do not use the harness against an existing personal world or public server.
 
 See [upstream review](docs/UPSTREAM-REVIEW.md), [test report](docs/TEST-REPORT.md), [changelog](CHANGELOG.md) and [attribution](NOTICE.md).

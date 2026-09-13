@@ -85,9 +85,8 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         EmiRecipe recipe = step.node().recipe();
         if (!(recipe instanceof EmiCraftingRecipe crafting)) throw new IllegalArgumentException("Unsupported dynamic crafting recipe");
         RecipeHolder<?> holder = EmiBridge.rawRecipe(recipe);
-        if (holder == null || (holder.value().getClass() != ShapedRecipe.class && holder.value().getClass() != ShapelessRecipe.class))
-            throw new IllegalArgumentException("Only normal shaped and shapeless recipes can be verified");
-        CraftingRecipe raw = (CraftingRecipe) holder.value();
+        if (holder == null) throw new IllegalArgumentException("The selected recipe is unavailable; prepare the tree again");
+        CraftingRecipe raw = CraftingCompatibility.verify(holder.value());
         if (!raw.canCraftInDimensions(gridSize, gridSize)) throw new IllegalArgumentException("Requires a 3×3 crafting table");
         var handler = EmiBridge.handler(recipe, screen);
         if (handler.getOutputSlot(menu) != menu.getSlot(0)) throw new IllegalArgumentException("This handler only transfers ingredients");

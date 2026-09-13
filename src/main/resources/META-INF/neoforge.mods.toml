@@ -10,7 +10,7 @@ description='''Finite, inventory-aware crafting jobs for EMI recipe trees. Clien
 [[dependencies.emiautocrafting]]
 modId="neoforge"
 type="required"
-versionRange="[21.1.250,21.2)"
+versionRange="[21.1.249,21.2)"
 ordering="NONE"
 side="CLIENT"
 [[dependencies.emiautocrafting]]

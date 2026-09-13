@@ -48,7 +48,8 @@ public final class EmiAutocrafting {
         NeoForge.EVENT_BUS.addListener(EmiAutocrafting::keyReleased);
         NeoForge.EVENT_BUS.addListener(EmiAutocrafting::render);
         NeoForge.EVENT_BUS.addListener(EmiAutocrafting::mouse);
-        LOG.info("EMI Autocrafting 2.0.0-beta.1: Minecraft 1.21.1, NeoForge 21.1.250, EMI 1.1.24");
+        NeoForge.EVENT_BUS.addListener(EmiAutocrafting::logout);
+        LOG.info("EMI Autocrafting 2.0.0-beta.2: Minecraft 1.21.1, NeoForge 21.1.249, EMI 1.1.24");
     }
     public static JobController.State state() { return JOB.state(); }
     public static String status() { return JOB.message(); }
@@ -124,6 +125,9 @@ public final class EmiAutocrafting {
         if (consumed) event.setCanceled(true);
     }
     private static void keyReleased(ScreenEvent.KeyReleased.Pre event) { PRESSED.remove(event.getKeyCode()); }
+    private static void logout(ClientPlayerNetworkEvent.LoggingOut event) {
+        cancel(); PRESSED.clear();
+    }
     private static void mouse(ScreenEvent.MouseButtonPressed.Pre event) { if (JOB.active()) cancel(); }
     private static boolean textFocused(GuiEventListener listener) {
         if ((listener instanceof EditBox || listener instanceof MultiLineEditBox) && listener.isFocused()) return true;

@@ -1,87 +1,57 @@
-# Verification report — 2.0.0-beta.1
+# Verification report — 2.0.0-beta.2
 
-Tests were performed on 13 September 2026 on macOS, using Minecraft 1.21.1, NeoForge 21.1.250, Java 21.0.12.1+1 and EMI's published NeoForge 1.1.24+1.21.1 artifact. Gradle 9.2.1 and ModDevGradle 2.0.147 built Mojang-mapped Java 21 classes.
+Tests were performed on 13 September 2026 on macOS with Minecraft 1.21.1, NeoForge 21.1.249, Java 21.0.12.1+1 and EMI 1.1.24+1.21.1+neoforge. Gradle 9.2.1 and ModDevGradle 2.0.147 produced the distributable JAR.
 
-## Results and evidence
+## Results
 
 | Check | Result | Evidence |
 |---|---|---|
-| Release build and JUnit | **BUILD SUCCESSFUL; 31 tests passed** | [build.txt](test-evidence/build.txt), JUnit XML |
-| Packaged JAR | **Passed metadata, bytecode and content checks** | [artifact-check.txt](test-evidence/artifact-check.txt) |
-| Singleplayer with deterministic tool fixtures | **21 passed** | [integrated-tools.txt](test-evidence/integrated-tools.txt) |
-| Dedicated server with EMI, addon absent | **16 passed** | [dedicated-emi.txt](test-evidence/dedicated-emi.txt) |
-| Dedicated server without EMI or addon, 600 ms added RTT | **18 passed** | [dedicated-no-emi-latency.txt](test-evidence/dedicated-no-emi-latency.txt) |
-| Final dedicated EMI regression, reload and disconnect | **6 distinct checks passed** | [dedicated-final.txt](test-evidence/dedicated-final.txt) |
+| Release build and JUnit | **BUILD SUCCESSFUL; 31 passed** | [Build](test-evidence/build-beta2.txt), [JUnit XML](test-evidence/beta2-junit/) |
+| Release artifact | **Passed metadata, content and Java 21 checks** | [Artifact check](test-evidence/artifact-check-beta2.txt) |
+| Packaged JAR with the pinned pack crafting sample | **30 passed; zero failures** | [Runtime assertions](test-evidence/packaged-pack-beta2.txt), [loaded versions and recipe classes](test-evidence/pack-runtime-versions-beta2.txt) |
+| Packaged JAR without optional pack mods | **9 passed; zero failures** | [Runtime assertions](test-evidence/packaged-vanilla-beta2.txt), [loaded versions](test-evidence/vanilla-runtime-versions-beta2.txt) |
 
-These are overlapping checks across environments, not distinct feature counts. The raw final evidence repeats the disconnect PASS while the client shuts down; it represents one check, not seven. The delivered harness adds a terminal guard to suppress duplicate reporting; that test-only change was [compiled successfully](test-evidence/harness-compile.txt). The in-game harness runs an actual rendered Minecraft client and an actual integrated/dedicated server. It uses server commands to arrange disposable fixtures, creates EMI trees through the real API, opens real menus and invokes the addon. Production execution then uses EMI filling and vanilla network/menu operations. Assertions inspect the real resulting inventory and controller state. The addon itself waits for received server menu snapshots before counting progress.
+The 30 sample checks comprise one proof that the addon was loaded from its built JAR, two UI/key checks, 17 baseline crafting/controller scenarios, eight pack-specific scenarios, recipe reload and disconnect. The standalone regression adds proof of loading the same JAR without KubeJS/JEI/the optional pack mods, plus recursive crafting, returned buckets, four-input shapeless crafting, reusable/damageable-tool fixtures and disconnect. Overlapping scenarios across runs are not distinct feature counts.
 
-The runtime runs used development classes from this source project rather than installing the packaged JAR in a separate launcher profile. The final artifact is separately checked for metadata, Java version, required mixins and exclusion of test code.
+Both profiles use the real rendered client, real integrated server, real inventories and EMI's production filling paths. The development-only harness arranges disposable worlds with commands, prepares EMI trees through its API, posts NeoForge keyboard events to start jobs, and checks the resulting state/items. In the packaged profile the addon's loose development classes are excluded and its code-source path is asserted to be the actual beta 2 JAR. This is a Gradle launch, not a CurseForge launcher profile or physical mouse/keyboard walkthrough.
 
-The full dedicated EMI matrix predates the final sibling-allocation refinement and four-input shapeless fix. The subsequent latency and singleplayer runs exercise the refined planner; the singleplayer run exercises the shapeless fix and tool fixtures. The final dedicated regression checks the resulting implementation on the server-assisted path. Tool fixtures are confined to the integrated test world; they are absent from both dedicated servers and the release JAR.
+## Pack-specific coverage
 
-## Coverage
-
-| Requirement | Verified behaviour |
+| Scenario | Verified result |
 |---|---|
-| Recursive tree | Two logs become planks, sticks and one wooden pickaxe in one job. |
-| Existing intermediates/finals | Existing three planks/two sticks skip intermediate production; one existing pickaxe counts toward a total of two. |
-| Multi-output rounding | A total of five sticks results in eight legitimate output items. |
-| Shared stock and alternatives | Unit tests reject double allocation, preserve reservations and reassign overlapping alternatives. Runtime datapack crafting accepts birch planks in a planks tag. |
-| Components | A datapack recipe produces a named/custom-data compass. The later dedicated and singleplayer tests start with a plain compass; the named target is still crafted, leaving two compasses. Production preflight and confirmation compare exact components. |
-| Missing/unsupported dependencies | Missing logs block with quantity. Unit tests use existing machine outputs and block only missing unsupported production. |
-| Returned containers | Cake retains at least three empty buckets across inventory/grid. |
-| Reusable tool | Four executions consume four iron ingots and retain exactly one test stamp. |
-| Damage and breakage | A durability-three test hammer produces three outputs, breaks through its actual remainder method, and blocks a target of four with the missing tool. |
-| Full inventory | Output-space preflight blocks; no craft is dispatched to make space. |
-| Grid/cursor | Existing grid contents or a held cursor stack block predictably; no automated cleanup of player-owned starting inputs is attempted. |
-| Single step | Stops after one confirmed recipe execution, retaining four planks. Synchronization is not counted as a craft. |
-| Cancellation | Changing the tree or closing the GUI cancels. Server `/reload` and client disconnect also cancelled, as recorded in the final regression. |
-| Latency | An ordered TCP proxy adds 300 ms in each direction without intentionally throttling throughput. The whole no-EMI matrix passed through it. |
-| Rejection | `doLimitedCrafting=true` plus revoked recipe knowledge prevents the output; the job times out, blocks and does not falsely complete or retry. |
-| Cycles/unresolved/huge targets | Unit tests cover repeated recipe paths, depth bounds, unresolved branches, checked overflow, Long.MAX_VALUE arithmetic and clamping before int conversion. These extreme cases were not run as giant live crafting jobs. |
-| 2×2/3×3 | Player inventory crafts sticks and a four-input shapeless fixture; a pickaxe step there explains that a 3×3 table is needed. |
-| Input/UI | NeoForge key events preserve Ctrl+A/C in a focused EditBox and EMI search. The quantity dialog accepts Enter and retains recipe identity/item-total semantics. Pure binding tests cover modifiers and disabled/invalid bindings. |
-| Server presence | Recorded `EmiClient.onServer` is true on the EMI server and false without EMI. Neither dedicated server loads the addon ([server mod lists](test-evidence/server-mod-lists.txt)). No optional storage mods are installed. |
+| Modified furnace from base stock | Forty cobblestone and nine coal produce one furnace through compressed blocks and a coal block, preserving the shared cobblestone budget. |
+| Existing furnace/intermediates | One existing furnace plus the remaining recipe inputs reaches a total of two. |
+| Modified piston chain | One existing piston plus raw planks material, cobblestone, redstone and two andesite alloy reaches a total of three pistons. The shaft recipe yields two shafts from two alloy. |
+| Missing Create production | Selecting the mixer recipe blocks missing andesite alloy as an unsupported machine step; no piston is produced. |
+| KubeJS ingredient action | A `keepIngredient` fixture is blocked with its iron input still in inventory and the grid empty. |
+| KubeJS output script | A named `modifyResult` fixture is blocked before crafting, retaining its iron input and empty grid. |
+| Plain KubeJS shapeless wrapper | Crafts successfully in the player 2×2 inventory. Runtime evidence confirms the special KubeJS wrapper class. |
+| Crafting Station | Its real menu is rejected before any inventory operation. |
 
-JUnit groups: 5 quantity tests, 8 controller tests, 15 planner tests and 3 binding tests. Controller tests cover one operation in flight, delayed confirmation, pacing, rejection, timeout without retry, cancellation, exceptions and single-step completion.
+The baseline includes recursive logs → planks → sticks → pickaxe, existing intermediates/finals, multi-output surplus, missing inputs, returned cake buckets, 2×2 and 3×3 limits, component-bearing output and tag alternatives, full inventory, pre-filled grid/cursor, single-step, changed-tree/closed-GUI cancellation, and a server-rejected craft that times out without retry. Recipe reload and disconnect cancel future actions. Start events run with JEI, Crafting Tweaks and Polymorph+ installed; text-field select-all/copy remains intact in the tested EditBox and EMI search.
+
+An earlier development run passed the crafting sample but exposed a harness exit-sequence error: it called `Minecraft.disconnect` without first closing the client level connection, leaving the integrated server running. The harness now follows the vanilla PauseScreen exit sequence; the final packaged run exits normally and includes a single disconnect PASS. This was a test-harness correction. Production also cancels immediately on NeoForge's logout event.
 
 ## Reproduce
 
-Use JDK 21. From the project directory:
+Use JDK 21 from the source-project directory:
 
 ```sh
 ./gradlew build
-./gradlew -Pintegration -PtoolFixtures runClient
+./gradlew -Pintegration -PpackCompatibility -PpackagedTest -PtestMode=packaged-pack runClient
+./gradlew -Pintegration -PpackagedTest -PtoolFixtures -PtestMode=packaged-vanilla -PtestFilter=logs_to_pickaxe,returned_buckets,player_four_input_shapeless,reusable_tool,damageable_tool_breaks,disconnect runClient
 ```
 
-The integration task creates a fresh disposable flat world with commands enabled and exits after its checks. It writes `run/runtime-tests-integrated.txt`. Inspect that file for `FAIL` or `HARNESS ERROR`; a Gradle game-process exit alone does not prove the assertions passed.
+The pack sample downloads the exact mod artifacts listed in [pack compatibility](PACK-COMPATIBILITY.md); hashes are in [PACK-DEPENDENCY-SHA256.txt](PACK-DEPENDENCY-SHA256.txt). Its recipe fixtures are independently authored, not a copy of the full pack. No optional mods, fixtures or test classes enter the mod JAR. `packagedTest` asserts the production code is loaded from the JAR. Read `run-packaged/runtime-tests-<mode>.txt` for FAIL/HARNESS ERROR; process exit code alone does not prove success. Never run the harness against an existing personal world or public server.
 
-For dedicated tests, use a disposable local server directory. Accept the Minecraft EULA, bind to `127.0.0.1:25565`, set `online-mode=false` for the development account, and grant operator access to `AutocraftTest` (offline UUID `c9a5ee66-eb82-3e82-93dc-fceca25aaf32`). Place `src/testMod/resources/data` in `<server>/world/datapacks/autocrafting_test/data` with a `pack.mcmeta` containing `{"pack":{"pack_format":48,"description":"Autocrafting test fixtures"}}`. Do not enable toolFixtures on these clients because their test items are absent on the dedicated server.
+JUnit groups remain five quantity tests, eight controller tests, fifteen planner tests and three binding tests. They check overflow/rounding, reservations and alternatives, bounds/cycles, delayed/rejected confirmations, pacing, timeout, cancellation, exceptions and one-step completion.
 
-```sh
-# First terminal, EMI server; wait until it is ready:
-./gradlew -PserverOnly -PserverDir=/absolute/disposable-server runServer
-# Second terminal:
-./gradlew -Pintegration -PtestMode=dedicated-emi runClient
+## Limits and historical evidence
 
-# For the other server path, restart the disposable server with:
-./gradlew -PserverOnly -PserverWithoutEmi -PserverDir=/absolute/disposable-server runServer
-# Start the local latency proxy in another terminal:
-python3 scripts/latency-proxy.py
-# Then connect the test client through it:
-./gradlew -Pintegration -PtestMode=dedicated-no-emi-latency -PtestPort=25566 runClient
-```
+- **The full Impostor Syndrome – Reimagined pack was not launched.** Its manifest recommends 14,400 MB RAM; the test Mac has 8 GB. The result applies to the pinned crafting sample and independent recipe fixtures, not all 637 manifest entries or every recipe/script.
+- EMI/JEI/Create log duplicate recipe IDs and synthetic toolbox warnings during indexing. The exercised crafting paths pass despite those warnings. Broader viewer UI, Polymorph conflict selection and every optional mod are not certified.
+- Use vanilla 3×3 and 2×2 menus. Custom stations, storage terminals and machines have no execution adapters. Chance-based/dynamic recipes and KubeJS ingredient actions/output scripts remain outside scope.
+- There was no physical hover/key-repeat walkthrough, all-GUI-scale visual audit, exhaustive dropped-entity/component fuzz test, or separate test of every recipe-book text field.
+- The beta 1 dedicated-server matrices verified operation with and without server EMI, including 600 ms added round-trip latency, with the addon absent on both servers. Those network paths are unchanged, but those tests used beta 1 / NeoForge 21.1.250 and were not repeated against this entire modpack. Full historical evidence and reproduction instructions remain in [the beta 1 report](TEST-REPORT-beta1.md).
 
-Optional `-PtestFilter=logs_to_pickaxe,player_four_input_shapeless,recipe_reload,disconnect` selects the final focused regression. All recipes/scenarios are in `src/testMod`; only the integrated tool fixtures additionally use `src/toolTest`. The harness has gained scenarios during development, so running `all` now includes the late reload/disconnect checks as well as the earlier recorded matrices.
-
-## Limits of this verification
-
-- No physical keyboard/mouse walkthrough of hovering EMI recipes was performed. The selection adapter was source-reviewed; the dialog and text-focus guards were exercised inside the game through APIs/events. Native key-repeat, OS focus loss, visual layout at every GUI scale and every recipe-book text field were not separately tested.
-- JEI was not installed; no intended pack requiring both viewers was supplied. Transfer-only JEI handlers are rejected by design, but coexistence is unverified.
-- No arbitrary modpack, custom crafting station, storage terminal, machine automation, network-job support or chance/dynamic recipe compatibility is claimed.
-- Tool compatibility is demonstrated by deterministic fixture items in ordinary recipes, not every mod's tool or damage implementation.
-- The latency proxy tests delay, not packet loss, disordered packets or every server plugin. Vanilla menu-protocol modifications can cause a timeout.
-- Inventory totals and retained buckets/tools are asserted; there is no exhaustive world-wide dropped-entity or all-components fuzz test. The preflight refuses insufficient capacity and never intentionally drops items.
-- The upstream 1.20.1 addon was inspected but not launched to reproduce its suspected defects. Port findings are source-level findings.
-
-This is a tested beta for the documented vanilla menu/standard recipe boundary, not a claim that arbitrary EMI trees can execute.
+This is a tested beta within the documented menu and recipe boundary. It cannot execute arbitrary EMI trees.
