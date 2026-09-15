@@ -44,6 +44,10 @@ if (project.hasProperty('integration')) {
     configurations.testModImplementation.extendsFrom configurations.implementation
     sourceSets.testMod.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
     sourceSets.testMod.runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    tasks.register('testModJar', Jar) {
+        archiveFileName = 'autocrafting-runtime-tests.jar'
+        from sourceSets.testMod.output
+    }
     neoForge.mods { autocrafting_test { sourceSet(sourceSets.testMod) } }
     neoForge.runs.client {
         systemProperty 'emiautocrafting.integration', 'true'
@@ -51,6 +55,9 @@ if (project.hasProperty('integration')) {
         systemProperty 'emiautocrafting.testMode', project.findProperty('testMode') ?: (project.hasProperty('packCompatibility') ? 'pack-compatibility' : 'integrated')
         systemProperty 'emiautocrafting.testPort', project.findProperty('testPort') ?: '25565'
         systemProperty 'emiautocrafting.testFilter', project.findProperty('testFilter') ?: 'all'
+        systemProperty 'emiautocrafting.clientFillOnly', project.hasProperty('clientFillOnly').toString()
+        systemProperty 'emiautocrafting.staleStorageUpdate', project.hasProperty('staleStorageUpdate').toString()
+        if (project.hasProperty('testPace')) systemProperty 'emiautocrafting.testPace', project.property('testPace')
         programArguments.addAll '--username', 'AutocraftTest', '--width', '1000', '--height', '700'
     }
 }
@@ -93,11 +100,30 @@ if (project.hasProperty('packCompatibility')) {
     tasks.named('runClient') { dependsOn 'preparePackCompatibility' }
 }
 
+// Optional storage test profile, using the exact JARs already installed in the supplied pack.
+if (project.hasProperty('storageModsDirectory')) {
+    if (!project.hasProperty('integration')) throw new GradleException('storageModsDirectory requires -Pintegration')
+    dependencies {
+        runtimeOnly fileTree(dir: project.property('storageModsDirectory'), includes: project.hasProperty('stationOnly') ? [
+            'craftingstationjei-*.jar', 'jei-*.jar', 'sophisticatedstorage-*.jar', 'sophisticatedcore-*.jar'
+        ] : [
+            'craftingstationjei-*.jar', 'jei-*.jar', 'ars_nouveau-*.jar', 'curios-neoforge-*.jar',
+            'geckolib-neoforge-*.jar', 'Patchouli-*.jar', 'appliedenergistics2-*.jar', 'guideme-*.jar',
+            'sophisticatedstorage-*.jar', 'sophisticatedcore-*.jar'
+        ])
+    }
+    neoForge.runs.client {
+        gameDirectory = file('run-storage')
+        jvmArguments.add project.hasProperty('stationOnly') ? '-Xmx1536m' : '-Xmx3G'
+        systemProperty 'emiautocrafting.storageCompatibility', 'true'
+    }
+}
+
 // Verify the distributable itself, with production classes absent from the development mod paths.
 if (project.hasProperty('packagedTest')) {
     if (!project.hasProperty('integration')) throw new GradleException('packagedTest requires -Pintegration')
     sourceSets.testMod.runtimeClasspath = sourceSets.testMod.output + configurations.testModRuntimeClasspath +
-        (sourceSets.main.runtimeClasspath - sourceSets.main.output) + files(tasks.named('jar'))
+        (sourceSets.main.runtimeClasspath - sourceSets.main.output) + (project.hasProperty('testAddonJar') ? files(project.property('testAddonJar')) : files(tasks.named('jar')))
     neoForge.runs.client {
         sourceSet = sourceSets.testMod
         loadedMods = [neoForge.mods.autocrafting_test]

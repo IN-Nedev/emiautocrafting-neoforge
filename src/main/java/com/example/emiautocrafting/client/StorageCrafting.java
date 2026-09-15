@@ -1,0 +1,201 @@
+// SPDX-License-Identifier: GPL-3.0-only
+package com.example.emiautocrafting.client;
+
+import com.example.emiautocrafting.emi.StackKey;
+import dev.emi.emi.api.recipe.EmiRecipe;
+import dev.emi.emi.api.recipe.VanillaEmiRecipeCategories;
+import dev.emi.emi.api.recipe.handler.*;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.NonNullList;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.*;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
+import java.util.*;
+
+/** Optional, explicitly identified menu protocols. No server/world access or storage mutation here. */
+final class StorageCrafting {
+    enum Kind { STATION, LECTERN, AE2 }
+    private final Kind kind;
+    private final AbstractContainerMenu menu;
+    final List<Integer> grid = new ArrayList<>(), inventory = new ArrayList<>(), sources = new ArrayList<>();
+    final int output, slotCount;
+
+    static StorageCrafting find(AbstractContainerMenu menu) {
+        Kind kind = switch (menu.getClass().getName()) {
+            case "com.leclowndu93150.craftingstationjei.menu.CraftingStationMenu" -> Kind.STATION;
+            case "com.hollingsworth.arsnouveau.client.container.CraftingTerminalMenu" -> Kind.LECTERN;
+            case "appeng.menu.me.items.CraftingTermMenu", "appeng.menu.me.items.WirelessCraftingTermMenu" -> Kind.AE2;
+            default -> null;
+        };
+        return kind == null ? null : new StorageCrafting(menu, kind);
+    }
+
+    private StorageCrafting(AbstractContainerMenu menu, Kind kind) {
+        this.menu = menu; this.kind = kind;
+        var player = Minecraft.getInstance().player;
+        int result = -1, count = menu.slots.size();
+        for (int position = 0; position < menu.slots.size(); position++) {
+            Slot slot = menu.slots.get(position);
+            String name = slot.getClass().getName();
+            // MEStorageScreen appends RepoSlots directly, outside AEBaseMenu's client-slot registry.
+            if (kind == Kind.AE2 && (name.equals("appeng.client.gui.me.common.RepoSlot")
+                    || (boolean) call(menu, "isClientSideSlot", new Class<?>[]{Slot.class}, slot))) {
+                count = Math.min(count, position);
+                continue;
+            }
+            if (slot.container == player.getInventory() && slot.getContainerSlot() < 36 && slot.mayPickup(player))
+                inventory.add(slot.index);
+            if (kind != Kind.AE2 && slot.index >= 1 && slot.index <= 9
+                    || kind == Kind.AE2 && name.equals("appeng.menu.slot.CraftingMatrixSlot")) grid.add(slot.index);
+            if (kind != Kind.AE2 && slot.index == 0
+                    || kind == Kind.AE2 && name.equals("appeng.menu.slot.CraftingTermSlot")) result = slot.index;
+            if (kind == Kind.STATION && name.equals("com.leclowndu93150.craftingstationjei.menu.CraftingStationMenu$SideContainerSlot"))
+                sources.add(slot.index);
+        }
+        if (grid.size() != 9 || inventory.isEmpty() || result < 0)
+            throw new IllegalArgumentException("This storage menu layout cannot be verified");
+        output = result; slotCount = count;
+        sources.addAll(grid); sources.addAll(inventory);
+    }
+
+    boolean valid() {
+        // Ars's client menu has no server tile and its stillValid always returns false.
+        // Server packets still perform the native distance/access checks.
+        return kind == Kind.LECTERN || menu.stillValid(Minecraft.getInstance().player);
+    }
+
+    String label() {
+        return switch (kind) { case STATION -> "Crafting Station inventories"; case LECTERN -> "Bookwyrm lectern storage"; case AE2 -> "AE2 stored items"; };
+    }
+
+    Map<StackKey, Long> remoteStock() {
+        Map<StackKey, Long> stock = new LinkedHashMap<>();
+        if (kind == Kind.LECTERN) {
+            for (Object entry : (List<?>) call(menu, "getStoredItems"))
+                add(stock, (ItemStack) call(entry, "getStack"), (long) call(entry, "getQuantity"));
+        } else if (kind == Kind.AE2) {
+            Object status = call(menu, "getLinkStatus");
+            if (!(boolean) call(status, "connected")) return stock;
+            Object repo = call(menu, "getClientRepo");
+            if (repo != null) for (Object entry : (Collection<?>) call(repo, "getAllEntries")) {
+                Object key = call(entry, "getWhat");
+                if (key != null && key.getClass().getName().equals("appeng.api.stacks.AEItemKey"))
+                    add(stock, (ItemStack) call(key, "toStack"), (long) call(entry, "getStoredAmount"));
+            }
+        }
+        return stock;
+    }
+
+    private static void add(Map<StackKey, Long> stock, ItemStack stack, long count) {
+        if (!stack.isEmpty() && count > 0) stock.merge(new StackKey(stack), count, Math::addExact);
+    }
+
+    StandardRecipeHandler<AbstractContainerMenu> handler() {
+        return new StandardRecipeHandler<>() {
+            public List<Slot> getInputSources(AbstractContainerMenu m) { return sources.stream().map(m::getSlot).toList(); }
+            public List<Slot> getCraftingSlots(AbstractContainerMenu m) { return grid.stream().map(m::getSlot).toList(); }
+            public Slot getOutputSlot(AbstractContainerMenu m) { return m.getSlot(output); }
+            public boolean supportsRecipe(EmiRecipe recipe) { return recipe.getCategory() == VanillaEmiRecipeCategories.CRAFTING; }
+        };
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    boolean fill(EmiRecipe recipe, List<ItemStack> items, AbstractContainerScreen<?> screen) {
+        if (kind == Kind.STATION) {
+            var handler = handler();
+            return handler.craft(recipe, new EmiCraftContext((AbstractContainerScreen) screen,
+                    handler.getInventory((AbstractContainerScreen) screen), EmiCraftContext.Type.CRAFTABLE,
+                    EmiCraftContext.Destination.NONE, 1));
+        }
+        if (kind == Kind.LECTERN) {
+            var ingredients = items.stream().map(s -> s.isEmpty() ? List.<ItemStack>of() : List.of(s.copy())).toList();
+            send(construct("com.hollingsworth.arsnouveau.common.network.ClientTransferHandlerPacket", new Class<?>[]{List.class}, ingredients));
+        } else {
+            NonNullList<ItemStack> templates = NonNullList.withSize(9, ItemStack.EMPTY);
+            for (int i = 0; i < 9; i++) templates.set(i, items.get(i).copy());
+            // Explicit templates and craftMissing=false: never submit a network autocrafting job.
+            send(construct("appeng.core.network.serverbound.FillCraftingGridFromRecipePacket",
+                    new Class<?>[]{ResourceLocation.class, NonNullList.class, boolean.class}, null, templates, false));
+        }
+        return true;
+    }
+
+    int outputDestination(ItemStack stack) {
+        for (int index : inventory) {
+            Slot slot = menu.getSlot(index);
+            if (slot.getItem().isEmpty() && slot.mayPlace(stack) && slot.getMaxStackSize(stack) >= stack.getCount()) return index;
+        }
+        throw new IllegalArgumentException("Keep one empty inventory slot for verified storage crafting");
+    }
+
+    Map<StackKey, Long> revealLimits(List<ItemStack> before, List<ItemStack> after, List<ItemStack> ingredients) {
+        Map<StackKey, Long> limits = new LinkedHashMap<>();
+        if (kind != Kind.STATION) return limits;
+        for (int index : sources) {
+            if (grid.contains(index) || inventory.contains(index)) continue;
+            ItemStack old = before.get(index), now = after.get(index);
+            // The station exposes at most one normal stack even when the chest holds more.
+            // Only a still-saturated source of an exact transferred ingredient can reveal stock.
+            if (!old.isEmpty() && old.getCount() == old.getMaxStackSize() && now.getCount() == old.getCount()
+                    && ItemStack.isSameItemSameComponents(old, now)
+                    && ingredients.stream().anyMatch(s -> ItemStack.isSameItemSameComponents(old, s)))
+                limits.merge(new StackKey(old), (long) old.getCount(), Math::addExact);
+        }
+        return limits;
+    }
+
+    void craftOnce(int destination) {
+        if (kind == Kind.AE2) {
+            try {
+                Class<?> type = Class.forName("appeng.helpers.InventoryAction");
+                Object action = type.getField("CRAFT_ITEM").get(null);
+                send(construct("appeng.core.network.serverbound.InventoryActionPacket",
+                        new Class<?>[]{type, int.class, long.class}, action, output, 0L));
+            } catch (ReflectiveOperationException error) { throw incompatible(error); }
+        } else click(output);
+        // The server processes these in order. Do not predict a cursor stack for native AE2 packets.
+        // An unsuccessful craft followed by clicking an empty destination cannot take or drop items.
+        click(destination);
+    }
+
+    int mergeDestination(int source) {
+        ItemStack stack = menu.getSlot(source).getItem();
+        if (stack.isEmpty()) return -1;
+        for (int index : inventory) {
+            Slot slot = menu.getSlot(index);
+            if (index != source && ItemStack.isSameItemSameComponents(slot.getItem(), stack) && slot.mayPlace(stack)
+                    && slot.getItem().getCount() + stack.getCount() <= slot.getMaxStackSize(stack)) return index;
+        }
+        return -1;
+    }
+
+    void clear(int index) {
+        int destination = mergeDestination(index);
+        if (destination < 0) destination = outputDestination(menu.getSlot(index).getItem());
+        click(index); click(destination);
+    }
+
+    private void click(int index) {
+        Minecraft.getInstance().getConnection().send(new ServerboundContainerClickPacket(menu.containerId, -1,
+                index, 0, ClickType.PICKUP, ItemStack.EMPTY, new Int2ObjectOpenHashMap<>()));
+    }
+
+    private static void send(Object packet) { PacketDistributor.sendToServer((CustomPacketPayload) packet); }
+    private static Object construct(String name, Class<?>[] types, Object... args) {
+        try { return Class.forName(name).getConstructor(types).newInstance(args); }
+        catch (ReflectiveOperationException | LinkageError error) { throw incompatible(error); }
+    }
+    private static Object call(Object target, String name) { return call(target, name, new Class<?>[0]); }
+    private static Object call(Object target, String name, Class<?>[] types, Object... args) {
+        try { return target.getClass().getMethod(name, types).invoke(target, args); }
+        catch (ReflectiveOperationException | LinkageError error) { throw incompatible(error); }
+    }
+    private static IllegalArgumentException incompatible(Throwable cause) {
+        return new IllegalArgumentException("This storage mod version cannot be verified; reopen a supported crafting menu", cause);
+    }
+}

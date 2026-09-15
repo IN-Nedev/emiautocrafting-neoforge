@@ -1,0 +1,7 @@
+Artifact: emiautocrafting-neoforge-1.21.1-2.0.0-beta.3.jar
+SHA256: 40a05270acf43ecc81bab4cc156a387ab5402b8c7b6b5ebeb00f828ff5618a2a
+Java class version: 65 (Java 21)
+Production classes: 34
+No test harness, fixtures or optional mod classes bundled.
+Final gameplay-test production class bytes match the JAR.
+Installed main-instance JAR hash matches the artifact.

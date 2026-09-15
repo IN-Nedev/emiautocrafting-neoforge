@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.emiautocrafting.core.TreePlannerTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-14T09:28:04.067Z" hostname="ivan-PC" time="0.011">
+  <properties/>
+  <testcase name="existingIntermediateSkipsProduction()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.002"/>
+  <testcase name="excessiveArithmeticFailsClosed()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.0"/>
+  <testcase name="sameStockCannotFundTwoBranches()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.0"/>
+  <testcase name="existingFinalAndBatchSurplus()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.0"/>
+  <testcase name="unsupportedMachineOnlyBlocksWhenStockIsMissing()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.0"/>
+  <testcase name="deepTreesStopAtBound()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.003"/>
+  <testcase name="alternativesUseExistingStock()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.0"/>
+  <testcase name="actualResultsRecalculateWholeChain()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.001"/>
+  <testcase name="overlappingAlternativesReassignEarlierChoices()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.001"/>
+  <testcase name="earlierBranchReservationIsExcludedFromNextStepBudget()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.0"/>
+  <testcase name="unresolvedAndMissingAreExplicit()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.0"/>
+  <testcase name="reusableToolIsNotMultipliedByBatchCount()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.001"/>
+  <testcase name="logsToPickaxePlan()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.0"/>
+  <testcase name="repeatedRecipeInPathTerminates()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.001"/>
+  <testcase name="returnedContainerFundsLaterBranch()" classname="com.example.emiautocrafting.core.TreePlannerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

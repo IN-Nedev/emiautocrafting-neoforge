@@ -7,3 +7,4 @@ run-server/
 .DS_Store
 run-pack/
 run-packaged/
+run-storage/

@@ -1,0 +1,51 @@
+PASS title_screen mods=16
+PATH mode=storage-regression EMI server=true
+PASS keyboard_event_text_focus (vanilla EditBox and EMI search)
+PASS quantity_dialog_enter_keeps_recipe_and_item_total
+PASS grouped_batch collapses without cancelling; ordinary favourites preserved; no duplicate synthetic entries
+PASS logs_to_pickaxe state=COMPLETED count=1 ticks=6 status=Completed
+PASS existing_intermediates state=COMPLETED count=1 ticks=3 status=Completed
+PASS existing_final_total state=COMPLETED count=2 ticks=6 status=Completed
+PASS multi_output_surplus state=COMPLETED count=8 ticks=5 status=Completed
+PASS missing_base state=BLOCKED count=0 ticks=2 status=Missing: 2 Oak Log (select a preferred recipe in EMI if it should be crafted)
+PASS returned_buckets state=COMPLETED count=1 ticks=3 status=Completed
+PASS player_2x2 state=COMPLETED count=4 ticks=4 status=Completed
+PASS modded_components_alternative state=COMPLETED count=2 ticks=3 status=Completed
+PASS full_inventory state=BLOCKED count=0 ticks=2 status=Not enough space for the output
+PASS preexisting_grid state=BLOCKED count=0 ticks=2 status=Clear the crafting grid before starting
+PASS occupied_cursor state=BLOCKED count=0 ticks=1 status=Put the cursor stack away before crafting
+PASS single_step state=COMPLETED count=4 ticks=3 status=Single step completed; crafted items were retained
+PASS changed_tree state=CANCELLED count=0 ticks=2 status=Cancelled; menu or recipe tree changed. Completed items were retained.
+PASS closed_gui state=CANCELLED count=0 ticks=2 status=Cancelled; menu or recipe tree changed. Completed items were retained.
+PASS server_rejects state=BLOCKED count=0 ticks=202 status=Server response timed out; reopen the menu before retrying
+PASS player_four_input_shapeless state=COMPLETED count=1 ticks=3 status=Completed
+PASS player_requires_3x3 state=BLOCKED count=0 ticks=2 status=Requires a 3×3 crafting table
+PASS reusable_tool state=COMPLETED count=4 ticks=9 status=Completed
+PASS damageable_tool_breaks state=BLOCKED count=3 ticks=7 status=Missing: 1 item.autocrafting_test.test_hammer (select a preferred recipe in EMI if it should be crafted)
+PASS speed_planks state=COMPLETED count=128 ticks=34 status=Completed
+PASS storage_station_chain conservation logs=0 planks=3 sticks=2 pickaxes=1
+PASS storage_station_chain state=COMPLETED count=1 ticks=11 status=Completed
+PASS storage_station_missing conservation logs=1 planks=0 sticks=0 pickaxes=0
+PASS storage_station_missing state=BLOCKED count=0 ticks=2 status=Missing: 1 Oak Log (select a preferred recipe in EMI if it should be crafted)
+PASS storage_station_batch conservation logs=0 planks=192 sticks=0 pickaxes=0
+PASS storage_station_batch state=COMPLETED count=192 ticks=143 status=Completed
+PASS storage_station_multi_missing conservation logs=1 planks=0 sticks=0 pickaxes=0
+PASS storage_station_multi_missing state=BLOCKED count=0 ticks=2 status=Missing: 3 Redstone Dust (select a preferred recipe in EMI if it should be crafted) (and 1 more item types)
+PASS storage_lectern_chain conservation logs=0 planks=3 sticks=2 pickaxes=1
+PASS storage_lectern_chain state=COMPLETED count=1 ticks=14 status=Completed
+PASS storage_lectern_missing conservation logs=1 planks=0 sticks=0 pickaxes=0
+PASS storage_lectern_missing state=BLOCKED count=0 ticks=2 status=Missing: 1 Oak Log (select a preferred recipe in EMI if it should be crafted)
+PASS storage_lectern_batch conservation logs=0 planks=192 sticks=0 pickaxes=0
+PASS storage_lectern_batch state=COMPLETED count=192 ticks=151 status=Completed
+PASS storage_lectern_multi_missing conservation logs=1 planks=0 sticks=0 pickaxes=0
+PASS storage_lectern_multi_missing state=BLOCKED count=0 ticks=2 status=Missing: 3 Redstone Dust (select a preferred recipe in EMI if it should be crafted) (and 1 more item types)
+PASS storage_ae2_chain conservation logs=0 planks=3 sticks=2 pickaxes=1
+PASS storage_ae2_chain state=COMPLETED count=1 ticks=10 status=Completed
+PASS storage_ae2_missing conservation logs=1 planks=0 sticks=0 pickaxes=0
+PASS storage_ae2_missing state=BLOCKED count=0 ticks=2 status=Missing: 1 Oak Log (select a preferred recipe in EMI if it should be crafted)
+PASS storage_ae2_batch conservation logs=0 planks=192 sticks=0 pickaxes=0
+PASS storage_ae2_batch state=COMPLETED count=192 ticks=97 status=Completed
+PASS storage_ae2_multi_missing conservation logs=1 planks=0 sticks=0 pickaxes=0
+PASS storage_ae2_multi_missing state=BLOCKED count=0 ticks=2 status=Missing: 3 Redstone Dust (select a preferred recipe in EMI if it should be crafted) (and 1 more item types)
+PASS recipe_reload state=CANCELLED count=0 ticks=20 status=Cancelled; menu or recipe tree changed. Completed items were retained.
+PASS disconnect state=CANCELLED; future actions stopped

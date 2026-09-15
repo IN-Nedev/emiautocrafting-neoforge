@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {"item": "minecraft:oak_log"},
+    {"item": "minecraft:diamond"},
+    {"item": "minecraft:diamond"},
+    {"item": "minecraft:redstone"},
+    {"item": "minecraft:redstone"},
+    {"item": "minecraft:redstone"}
+  ],
+  "result": {"id": "minecraft:paper", "count": 1}
+}

@@ -29,9 +29,27 @@ class JobControllerTest {
         for(int i=0;i<100;i++)c.tick(i,20,2,p);
         assertTrue(p.timeout);assertEquals(1,p.sent);assertEquals(JobController.State.BLOCKED,c.state());
     }
+    @Test void timeoutRetainsTheSpecificSynchronizationReason() {
+        var c=new JobController<String>();
+        var p=new Port() { public String waitingMessage(){return "Server snapshot differs from displayed slot 379";} };
+        c.start(false,0);c.tick(0,20,0,p);c.tick(20,20,0,p);
+        assertEquals(JobController.State.BLOCKED,c.state());
+        assertTrue(c.message().contains("displayed slot 379"));assertEquals(1,p.sent);
+    }
     @Test void closingGuiStopsFutureDispatch() {
-        var c=new JobController<String>();var p=new Port();c.start(false,0);c.tick(0,100,2,p);p.valid=false;c.tick(1,100,2,p);
+        var c=new JobController<String>();var p=new Port();c.start(false,0);p.valid=false;c.tick(0,100,2,p);
         assertEquals(JobController.State.CANCELLED,c.state());assertEquals(0,p.sent);
+    }
+    @Test void zeroDelayDispatchesOnlyOncePerTickAndStillWaitsForServer() {
+        var c=new JobController<String>();var p=new Port();c.start(false,0);
+        c.tick(0,100,0,p);assertEquals(1,p.sent);
+        for(int t=1;t<20;t++)c.tick(t,100,0,p);
+        assertEquals(1,p.sent);
+        p.confirmation=JobController.Confirmation.CONFIRMED;
+        c.tick(20,100,0,p);assertEquals(2,p.sent);
+        p.confirmation=JobController.Confirmation.PENDING;
+        c.tick(21,100,0,p);assertEquals(2,p.sent);
+        p.valid=false;c.tick(22,100,0,p);assertEquals(2,p.sent);assertEquals(JobController.State.CANCELLED,c.state());
     }
     @Test void exceptionDoesNotLeaveAnActiveLock() {
         var c=new JobController<String>();var p=new Port();p.fail=true;c.start(false,0);c.tick(0,100,2,p);c.tick(1,100,2,p);

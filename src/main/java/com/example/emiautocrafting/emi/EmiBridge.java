@@ -60,6 +60,7 @@ public final class EmiBridge {
         BoM.tree.batches = total;
         BoM.tree.recalculate();
         BoM.craftingMode = true;
+        JobSidebar.track(BoM.tree);
     }
     public static Frozen freeze() {
         if (!hasTree()) throw new IllegalArgumentException("Prepare an EMI recipe tree first");

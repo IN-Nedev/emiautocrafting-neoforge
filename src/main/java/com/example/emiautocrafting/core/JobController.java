@@ -16,6 +16,8 @@ public final class JobController<S> {
         void dispatch(S step);
         Confirmation confirm(S step);
         void timeout();
+        default void rejected() { }
+        default String waitingMessage() { return "Waiting for server"; }
         String describe(S step);
         void error(Exception error);
         default boolean countsAsCraft(S step) { return true; }
@@ -38,7 +40,9 @@ public final class JobController<S> {
         if (!active()) return;
         try {
             if (!port.valid()) { cancel("Cancelled; menu or recipe tree changed. Completed items were retained."); return; }
-            switch (state) {
+            // Advance bookkeeping in the same tick, but dispatch at most one operation.
+            // Every following dispatch still requires confirmation of the previous one.
+            for (int transition = 0; transition < 3 && active(); transition++) switch (state) {
                 case PLANNING -> {
                     if (tick < next) return;
                     if (operations >= 100000) { set(State.BLOCKED, "Job step limit reached; prepare a smaller target"); return; }
@@ -52,19 +56,21 @@ public final class JobController<S> {
                     // Install WAITING before a callback can fail or synchronously report a result.
                     set(State.WAITING, "Waiting for server");
                     port.dispatch(step);
+                    return;
                 }
                 case WAITING -> {
                     Confirmation result = port.confirm(step);
                     if (result == Confirmation.REJECTED) {
+                        port.rejected();
                         set(State.BLOCKED, "Server inventory did not match the craft; reopen the menu before retrying");
                     } else if (result == Confirmation.CONFIRMED) {
                         if (port.countsAsCraft(step)) operations++;
                         if (single && port.countsAsCraft(step)) set(State.COMPLETED, "Single step completed; crafted items were retained");
-                        else { next = tick + paceTicks; set(State.PLANNING, "Planning"); }
+                        else { next = tick + (port.countsAsCraft(step) ? paceTicks : 0); set(State.PLANNING, "Planning"); }
                     } else if (tick - sent >= timeoutTicks) {
                         port.timeout();
-                        set(State.BLOCKED, "Server response timed out; reopen the menu before retrying");
-                    }
+                        set(State.BLOCKED, "Server response timed out: " + port.waitingMessage() + "; reopen the menu before retrying");
+                    } else { message = port.waitingMessage(); return; }
                 }
                 default -> { }
             }

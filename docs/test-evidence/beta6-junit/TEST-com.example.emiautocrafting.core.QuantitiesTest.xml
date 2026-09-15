@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.emiautocrafting.core.QuantitiesTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-14T17:13:11.489Z" hostname="ivan-PC" time="0.003">
+  <properties/>
+  <testcase name="finalStockReducesTotal()" classname="com.example.emiautocrafting.core.QuantitiesTest" time="0.001"/>
+  <testcase name="maximumLongDoesNotOverflow()" classname="com.example.emiautocrafting.core.QuantitiesTest" time="0.0"/>
+  <testcase name="surplusRoundsUp()" classname="com.example.emiautocrafting.core.QuantitiesTest" time="0.0"/>
+  <testcase name="clampBeforeIntegerConversion()" classname="com.example.emiautocrafting.core.QuantitiesTest" time="0.0"/>
+  <testcase name="rejectNonFiniteRequests()" classname="com.example.emiautocrafting.core.QuantitiesTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,6 @@
+Installed addon: emiautocrafting-neoforge-1.21.1-2.0.0-beta.6.jar
+SHA256: c97ce58b4e81a3cda6497cf092a783e55a5f91a0ea0a0ff714c4f49bb6543b81
+Backup directory: beta6-20260914-201700
+Main Minecraft was closed at installation.
+Exactly one active addon; no runtime harness.
+EMI and addon config are byte-for-byte unchanged.

@@ -4,6 +4,7 @@ package com.example.emiautocrafting;
 import com.example.emiautocrafting.client.*;
 import com.example.emiautocrafting.core.JobController;
 import com.example.emiautocrafting.emi.EmiBridge;
+import com.example.emiautocrafting.emi.JobSidebar;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
@@ -47,13 +48,14 @@ public final class EmiAutocrafting {
         NeoForge.EVENT_BUS.addListener(EmiAutocrafting::keyPressed);
         NeoForge.EVENT_BUS.addListener(EmiAutocrafting::keyReleased);
         NeoForge.EVENT_BUS.addListener(EmiAutocrafting::render);
-        NeoForge.EVENT_BUS.addListener(EmiAutocrafting::mouse);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, EmiAutocrafting::mouse);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, EmiAutocrafting::scroll);
         NeoForge.EVENT_BUS.addListener(EmiAutocrafting::logout);
-        LOG.info("EMI Autocrafting 2.0.0-beta.2: Minecraft 1.21.1, NeoForge 21.1.249, EMI 1.1.24");
+        LOG.info("EMI Autocrafting 2.0.0-beta.6: Minecraft 1.21.1, NeoForge 21.1.249, EMI 1.1.24");
     }
     public static JobController.State state() { return JOB.state(); }
     public static String status() { return JOB.message(); }
-    public static void feedback(String text) { feedback = text; feedbackUntil = ticks + 200; }
+    public static void feedback(String text) { feedback = text; feedbackUntil = ticks + 200; diagnostic("Autocrafting feedback: {}", text); }
     public static void quarantine(AbstractContainerMenu menu) { quarantined = menu; mustReopenInventory = true; }
     public static void diagnostic(String message, Object... arguments) {
         if (EmiAutocraftingConfig.DIAGNOSTICS.get()) LOG.info(message, arguments);
@@ -78,7 +80,8 @@ public final class EmiAutocrafting {
                 String message = JOB.message();
                 if (JOB.state() == JobController.State.COMPLETED && message.equals("Completed")) message = "Completed: " + port.total() + " " + port.targetLabel() + " (batch surplus retained)";
                 feedback(message);
-                if (JOB.state() == JobController.State.BLOCKED && previous == JobController.State.WAITING) quarantine(port.menu());
+                if (JOB.state() == JobController.State.BLOCKED && !port.missing().isEmpty() && mc.screen != null)
+                    mc.setScreen(new MissingItemsScreen(mc.screen, port.missing(), port.inventoryLabel()));
                 if (EmiAutocraftingConfig.DIAGNOSTICS.get()) LOG.info("Autocrafting state={} target={} message={}", JOB.state(), port.targetLabel(), message);
             }
         }
@@ -96,6 +99,7 @@ public final class EmiAutocrafting {
         }
         try {
             port = new MenuPort(screen, EmiBridge.freeze());
+            JobSidebar.track(EmiBridge.freeze().tree());
             Minecraft.getInstance().setScreen(screen);
             JOB.start(single, ticks); feedback("Planning"); return true;
         } catch (IllegalArgumentException | ArithmeticException error) { feedback(error.getMessage()); return false; }
@@ -126,15 +130,22 @@ public final class EmiAutocrafting {
     }
     private static void keyReleased(ScreenEvent.KeyReleased.Pre event) { PRESSED.remove(event.getKeyCode()); }
     private static void logout(ClientPlayerNetworkEvent.LoggingOut event) {
-        cancel(); PRESSED.clear();
+        cancel(); PRESSED.clear(); JobSidebar.reset();
     }
-    private static void mouse(ScreenEvent.MouseButtonPressed.Pre event) { if (JOB.active()) cancel(); }
+    private static void mouse(ScreenEvent.MouseButtonPressed.Pre event) {
+        if (JobSidebar.click(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getButton())) { event.setCanceled(true); return; }
+        if (JOB.active()) cancel();
+    }
+    private static void scroll(ScreenEvent.MouseScrolled.Pre event) {
+        if (JobSidebar.scroll(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getScrollDeltaY())) event.setCanceled(true);
+    }
     private static boolean textFocused(GuiEventListener listener) {
         if ((listener instanceof EditBox || listener instanceof MultiLineEditBox) && listener.isFocused()) return true;
         if (listener instanceof ContainerEventHandler container && container.getFocused() != null) return textFocused(container.getFocused());
         return false;
     }
     private static void render(ScreenEvent.Render.Post event) {
+        JobSidebar.render(event.getScreen(), event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
         if (EmiBridge.screen() == null || (!JOB.active() && ticks > feedbackUntil)) return;
         Minecraft mc = Minecraft.getInstance();
         String text = JOB.active() ? JOB.message() : feedback;

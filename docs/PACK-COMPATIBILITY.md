@@ -1,60 +1,48 @@
-# Impostor Syndrome – Reimagined
+# Impostor Syndrome – Reimagined: beta 6
 
-## Install beta 2 in your own pack instance
+This installation targets **Impostor Syndrome – Reimagined 0.6-hotfix**, Minecraft 1.21.1, NeoForge 21.1.249 and Java 21. The older Impostor Syndrome pack is a different pack.
 
-1. Close Minecraft. In the CurseForge app, open your installed pack's menu and choose **Open Folder**.
-2. Open that instance's `mods` folder and copy in `emiautocrafting-neoforge-1.21.1-2.0.0-beta.2.jar`. Remove any older emiautocrafting addon JAR so only one version is installed.
-3. Add [EMI 1.1.24 for NeoForge 1.21.1](https://modrinth.com/mod/emi/version/1.1.24%2B1.21.1%2Bneoforge), whose filename is `emi-1.1.24+1.21.1+neoforge.jar`, to the same folder. The inspected pack includes JEI but does not include EMI. Keep JEI installed.
-4. Launch the pack normally. Its NeoForge 21.1.249 can remain as supplied. The addon and EMI require Minecraft 1.21.1 and Java 21.
-5. Open a **vanilla crafting table** with materials in your inventory and an empty grid/cursor. Choose the intermediate recipes with EMI's hearts, hover the target recipe output, press **Ctrl+A**, enter the desired total and then press **Ctrl+C** to start. Press Ctrl+C or Ctrl+X to cancel; N performs one step. On macOS, use Control for these defaults.
+## Prism installation and use
 
-This is a local installation; you do not need to upload anything to CurseForge or a server. The addon belongs on the client. A dedicated server does not need the addon, and server-side EMI is optional. Download the mod JAR, not the source ZIP or sources JAR. When updating the pack later, check that both client JARs are still present and that the pack still uses these Minecraft/loader versions.
+In Prism, select **Impostor Syndrome – Reimagined → Edit → Mods**. Keep the pack's JEI, EMI `1.1.24+1.21.1+neoforge`, and one addon JAR: `emiautocrafting-neoforge-1.21.1-2.0.0-beta.6.jar`. Remove older addon JARs from the active mods directory. The sources JAR and runtime-test harness are not player mods.
 
-## What was addressed
+Open one of the interfaces below with an empty cursor/grid. Keep one empty player inventory slot for native storage result pickup. Prepare a total using **Ctrl+A** over the recipe output, choose intermediate recipes with EMI's hearts/tree, then **Ctrl+C** starts/stops. **Ctrl+X** cancels and **N** executes one confirmed recipe. Click out of a search field before using shortcuts; text fields keep their copy/select-all behaviour.
 
-The inspected release is [0.6-hotfix, file 8811966](https://www.curseforge.com/minecraft/modpacks/impostor-syndrome-reimagined/files/8811966), released 5 September 2026. Its manifest has 637 mod entries, uses NeoForge 21.1.249 and recommends 14,400 MB RAM. The test machine has 8 GB RAM, so **the complete pack was not launched**. Compatibility here means a tested sample of its crafting stack and representative table recipes, not certification of every mod, recipe or world.
+| Interface | Materials counted and used |
+|---|---|
+| Vanilla table / player 2×2 grid | Main inventory and hotbar |
+| Crafting Station, version 2.1.1 | Player inventory plus native adjacent inventory slots, including other container tabs |
+| Ars Nouveau 5.13.1 Bookwyrm crafting lectern | Player inventory plus inventories linked through the lectern's normal storage setup |
+| AE2 19.2.17 ME crafting terminal | Player inventory, crafting grid and actual items in the connected ME storage |
 
-Beta 1 required NeoForge 21.1.250 and rejected KubeJS's special recipe wrapper classes. Beta 2 builds against 21.1.249 and accepts the known shaped/shapeless KubeJS wrappers only when they contain no ingredient actions or output scripts. The original recipe still verifies its actual ingredients, output and returned items, and every execution waits for server inventory confirmation.
+The active tree occupies its own **Craft batch** panel. Its header collapses/expands without cancelling. **Tree** opens the editable tree and stops the job; **Clear** removes the batch. Favourites remain separate. A blocked material check shows every missing material and quantity after subtracting accessible stock. Add those materials and explicitly restart.
 
-The sample uses these versions from the pack's manifest, plus the required EMI release:
+The installed config uses `pacingTicks = 0` and `groupCraftingJob = true`. Zero means no extra delay after server confirmation; it does not bypass confirmation. Outputs are merged into stacks and exact native grid refills are reused where possible.
 
-| Mod | Version | CurseForge project / file |
-|---|---|---|
-| JEI | 19.44.0.405 | 238222 / 8732390 |
-| KubeJS | 2101.7.2-build.374 | 238086 / 8715199 |
-| Rhino | 2101.2.8-build.91 | 416294 / 8463898 |
-| Architectury | 13.0.11 | 419699 / 8492726 |
-| Crafting Tweaks | 21.1.11 | 233071 / 8697050 |
-| Balm | 21.0.65 | 531761 / 8645517 |
-| Polymorph+ | 1.3.1+1.21.1 | 1586874 / 8750431 |
-| AllTheCompressed | 4.4.0 | 514045 / 7361502 |
-| Create | 6.0.10 | 328085 / 7963363 |
-| Crafting Station: J/EMI Edition Updated | 2.1.1 | 1127715 / 7932261 |
-| EMI (added separately) | 1.1.24+1.21.1+neoforge | 580555; pinned Maven artifact |
+## Verification and limits
 
-Nested dependencies such as Flywheel, Ponder and KumaAPI load from those mods. Recipe fixtures in `src/packTest` were independently authored for these tests; the full pack, its scripts and its assets are not redistributed.
+The test setup uses a separate Prism instance named **Impostor Syndrome – Autocrafting Test**, with the installed pack's mods, scripts/configuration and assets, plus a test harness. It creates its own disposable worlds; personal saves are not used. The harness is kept out of the main instance. See [the current test report](TEST-REPORT.md) for results and evidence.
 
-## Supported examples and boundaries
+Tests also run against the exact installed Crafting Station, Ars and AE2 JARs in a smaller isolated runtime. Real chests are linked to the station and lectern; AE2 uses a powered terminal and a finite 1k item cell. The chain test starts with two logs entirely in storage and checks one pickaxe, three planks and two sticks afterward. Large jobs check that 48 stored logs become exactly 192 planks in three player stacks. Shortage cases verify that existing stored items are retained.
 
-- **Furnace:** four ordinary cobblestone, four compressed cobblestone and one coal block. The addon can make the compressed blocks and coal block first, sharing the cobblestone stock correctly. Existing furnaces and compressed blocks count toward the requested total.
-- **Piston:** the modified recipe uses a Create shaft. The fixture follows the pack's shaft yield of two shafts from two andesite alloy. Existing alloy can feed this table-crafting chain.
-- **Machines:** producing missing andesite alloy in a Create mixer is unsupported. Craft that material yourself and put it in your inventory, then restart the job. Choose the intended recipe in EMI when an ingredient has multiple possible sources.
-- **KubeJS:** plain shaped/shapeless wrappers work. Ingredient actions such as `keepIngredient` and scripted `modifyResult` recipes remain blocked. The pack's component-dependent bee recipes are outside this support boundary.
-- **Interfaces:** use the vanilla 3×3 table or player 2×2 grid. Crafting Station, Crafting on a Stick, Extended Crafting tables and AE2/storage terminals have no execution adapters. Only the selected Crafting Station's rejection was runtime-tested; the other interfaces are outside scope.
-- **JEI / Polymorph+:** the sampled stack loads with EMI, and the tested addon keys and vanilla-menu crafting work together. This is not an exhaustive test of either mod's UI. Conflicting recipes are refused when the real matching recipe differs from the chosen EMI recipe.
+Supported recipe classes are normal shaped/shapeless crafting and the known plain KubeJS wrappers. Custom ingredient actions, scripted output modifiers, chance recipes, Create processing machines and AE2 CPU autocrafting jobs remain outside scope. Supply already-made machine products as ingredients. The ME adapter never requests craftable-only patterns or creates patterns. The wireless crafting menu is recognized through the same protocol but is not separately runtime-tested.
 
-The sampled EMI/JEI/Create combination logs duplicate recipe IDs and synthetic toolbox recipe warnings while indexing recipes. The tested crafting paths operate despite those warnings; the addon does not fix or hide them. Broader recipe-viewer behavior and the remaining pack mods are unverified.
+Other modded benches, Tom's Storage, Refined Storage and Extended Crafting are not covered. Crafting Station quantities are limited to what its native slots expose; oversized chest/drawer stocks may be capped. Beta 4 handles material revealed during transfer from these capped slots, fixing the filled-grid stall reproduced with a Sophisticated Storage stack upgrade. Simultaneous external storage changes can stop verification and require reopening the interface. Keep the native menu and its power/storage links available during crafting.
 
-See [the verification report](TEST-REPORT.md) for results and evidence. The earlier dedicated-server tests cover the unchanged server-assisted and container-click paths; they were performed on beta 1, not on this full modpack.
+Beta 5 also keeps the station's displayed side inventories in its native server-backed cache. This prevents delayed client chest updates from overwriting the menu's post-transfer quantities. It does not add a delay or skip confirmation, and actual concurrent changes to the server's stored items can still halt a job.
 
-## Reproduce the sample
+Beta 6 verifies the exact items involved in each operation. An unused toolbox changing metadata, or another unrelated storage item arriving/leaving, no longer blocks that operation. Ingredients, output, returned items and reusable tools remain component-sensitive and require exact confirmed quantities. Concurrent changes to those involved items can still halt the job. Missing-material planning continues to use the full current accessible inventory.
 
-With JDK 21, run from the source project:
+Full-pack launch and the listed test recipes are evidence for those paths, not a claim that every mod, recipe or UI combination has been tested. The pack emits unrelated viewer/indexing/mixin warnings; the addon does not alter them. Historical sample and dedicated-server results remain in [the beta 2 report](TEST-REPORT-beta2.md) and [the beta 1 report](TEST-REPORT-beta1.md).
+
+## Reproduce the storage profile
+
+With Java 21, from this project:
 
 ```sh
 ./gradlew build
-./gradlew -Pintegration -PpackCompatibility runClient
-./gradlew -Pintegration -PpackCompatibility -PpackagedTest -PtestMode=packaged-pack runClient
+./gradlew -Pintegration -PtoolFixtures -PtestPace=0 \
+  '-PstorageModsDirectory=/absolute/path/to/the/pack/minecraft/mods' runClient
 ```
 
-The last command loads the distributable addon JAR, excludes its loose development classes, and runs the test harness in a separate `run-packaged` directory. It asserts the addon's code-source path before testing. This is an isolated Gradle launch, not a CurseForge launcher installation. Inspect `runtime-tests-packaged-pack.txt` in that directory; a successful game-process exit alone does not prove that assertions passed.
+The optional Gradle profile loads the installed station, Ars, AE2 and required companion JARs. It creates disposable worlds in `run-storage`. Read `runtime-tests-<mode>.txt` for failures; a clean process exit alone is not proof that assertions passed. Do not run the test harness against a personal world or a public server.
