@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.example.emiautocrafting.core.ControlsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-13T16:16:04.328Z" hostname="Ivans-MacBook-Air.local" time="0.092">
-  <properties/>
-  <testcase name="disabledAndInvalidBindingsNeverMatchUnknownKeys()" classname="com.example.emiautocrafting.core.ControlsTest" time="0.078"/>
-  <testcase name="exactModifiersPreserveOtherShortcuts()" classname="com.example.emiautocrafting.core.ControlsTest" time="0.005"/>
-  <testcase name="configuredFunctionKeysAndModifiers()" classname="com.example.emiautocrafting.core.ControlsTest" time="0.003"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

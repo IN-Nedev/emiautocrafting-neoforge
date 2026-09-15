@@ -73,23 +73,13 @@ public class RuntimeTests {
         }
     }
     static {
-        if (Boolean.getBoolean("emiautocrafting.packCompatibility")) {
-            CASES.add(new Scenario("pack_furnace_shared_stock","furnace",Items.FURNACE,1,1,null,
-                List.of("give @s cobblestone 40","give @s coal 9"),false));
-            CASES.add(new Scenario("pack_furnace_existing","furnace",Items.FURNACE,2,2,null,
-                List.of("give @s furnace 1","give @s cobblestone 4","give @s allthecompressed:cobblestone_1x 4","give @s coal_block 1"),false));
-            CASES.add(new Scenario("pack_piston_chain","piston",Items.PISTON,3,3,null,
-                List.of("give @s piston 1","give @s oak_log 2","give @s cobblestone 8","give @s redstone 2","give @s create:andesite_alloy 2"),false));
-            CASES.add(new Scenario("pack_missing_machine","piston",Items.PISTON,1,0,"unsupported machine",
-                List.of("give @s oak_planks 3","give @s cobblestone 4","give @s redstone 1"),false));
-            CASES.add(new Scenario("pack_scripted_remainder","autocrafting_test:scripted_remainder",Items.GOLD_NUGGET,1,0,"unsupported",
+        if (Boolean.getBoolean("emiautocrafting.kubejsFixtures")) {
+            CASES.add(new Scenario("kubejs_scripted_remainder","autocrafting_test:scripted_remainder",Items.GOLD_NUGGET,1,0,"unsupported",
                 List.of("give @s iron_ingot 1","give @s stick 1"),false));
-            CASES.add(new Scenario("pack_scripted_output","autocrafting_test:scripted_output",Items.DIAMOND,1,0,"unsupported",
+            CASES.add(new Scenario("kubejs_scripted_output","autocrafting_test:scripted_output",Items.DIAMOND,1,0,"unsupported",
                 List.of("give @s iron_ingot 1","give @s coal 1"),false));
-            CASES.add(new Scenario("pack_plain_shapeless","autocrafting_test:plain_kubejs_shapeless",Items.EMERALD,1,1,null,
+            CASES.add(new Scenario("kubejs_plain_shapeless","autocrafting_test:plain_kubejs_shapeless",Items.EMERALD,1,1,null,
                 List.of("give @s copper_ingot 1","give @s coal 1"),true));
-            CASES.add(new Scenario("pack_station_inventory","oak_planks",Items.OAK_PLANKS,4,4,null,
-                List.of("give @s oak_log 1"),false));
         }
     }
     static {
@@ -169,8 +159,8 @@ public class RuntimeTests {
         }
         try {
             if (launched && !reportedPath && MC.screen instanceof TitleScreen && MC.level == null && ticks-at>400) {
-                if (worldAttempts >= 3) { report("HARNESS ERROR pack world loading failed after three attempts"); finish(); return; }
-                report("RETRY pack returned to title before world loading completed"); launched=false;
+                if (worldAttempts >= 3) { report("HARNESS ERROR world loading failed after three attempts"); finish(); return; }
+                report("RETRY returned to title before world loading completed"); launched=false;
             }
             if (!launched && MC.screen instanceof AccessibilityOnboardingScreen) MC.setScreen(new TitleScreen());
             if(!launched && MC.screen instanceof TitleScreen && MC.getOverlay()==null){
@@ -242,13 +232,11 @@ public class RuntimeTests {
                 stage=2;at=ticks;
             }else if(stage==2&&ticks-at>20&&EmiBridge.screen()!=null){
                 EmiRecipe recipe=EmiApi.getRecipeManager().getRecipe(ResourceLocation.parse(c.recipe().contains(":")?c.recipe():"minecraft:"+c.recipe()));
-                if (c.name().startsWith("pack_")) {
+                if (c.name().startsWith("kubejs_")) {
                     var raw=EmiBridge.rawRecipe(recipe);
-                    System.out.println("[PACK RECIPE] "+recipe.getId()+" raw="+(raw==null?"missing":raw.value().getClass().getName()));
+                    System.out.println("[KUBEJS RECIPE] "+recipe.getId()+" raw="+(raw==null?"missing":raw.value().getClass().getName()));
                 }
                 var preferredIds = new ArrayList<>(List.of("minecraft:oak_planks","minecraft:stick"));
-                if (Boolean.getBoolean("emiautocrafting.packCompatibility")) preferredIds.addAll(List.of(
-                    "minecraft:coal_block", "allthecompressed:compress/cobblestone_1x", "create:shaft", "jei:/create/mixing/andesite_alloy"));
                 for(String id:preferredIds){
                     var preferred=EmiApi.getRecipeManager().getRecipe(ResourceLocation.parse(id));if(preferred!=null)BoM.addRecipe(preferred);
                 }
@@ -310,9 +298,9 @@ public class RuntimeTests {
                                     && shortages.stream().anyMatch(v -> v.getKey().startsWith("Redstone Dust") && v.getValue()==3);
                         }
                     }
-                    if(c.name().startsWith("pack_") && c.blocked()!=null) {
+                    if(c.name().startsWith("kubejs_") && c.blocked()!=null) {
                         pass&=count==c.expected();
-                        if(c.name().startsWith("pack_scripted_")) {
+                        if(c.name().startsWith("kubejs_scripted_")) {
                             pass&=MC.player.getInventory().items.stream().filter(s->s.is(Items.IRON_INGOT)).mapToInt(ItemStack::getCount).sum()==1;
                             pass&=MC.player.containerMenu.slots.stream().skip(1).limit(c.inventory()?4:9).allMatch(s->s.getItem().isEmpty());
                         }

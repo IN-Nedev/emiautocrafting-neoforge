@@ -1,8 +1,0 @@
-Same 128-plank request: 32 oak logs, 32 recipe executions, isolated integrated-server runtime.
-run-storage/runtime-tests-storage-ae-baseline.txt
-PASS speed_planks state=COMPLETED count=128 ticks=199 status=Completed
-run-storage/runtime-tests-storage-regression.txt
-PASS speed_planks state=COMPLETED count=128 ticks=34 status=Completed
-Previous scheduler/pacing: 199 client ticks. New scheduler, pacingTicks=0: 34 client ticks.
-Ratio: 199/34 = 5.85. At 20 ticks/second: 9.95s versus 1.70s.
-This is an isolated benchmark, not a guarantee for every recipe or the full pack.

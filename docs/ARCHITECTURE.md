@@ -37,7 +37,7 @@ The incoming full-menu snapshot is copied after the client packet handler applie
 
 Unused stored items may change metadata, arrive or leave without invalidating an operation that does not touch them. After FILL, capped-source reconciliation runs on the scoped quantities; background quantities are taken from the new inventory. A prepared CRAFT retains its exact scoped expectation while rebasing unrelated stock again before dispatch. Subsequent planning reads current accessible inventory. Relevant losses, missing outputs and changed reusable inputs still cannot confirm; component matching itself is not relaxed.
 
-The synchronization request is a vanilla no-op QUICK_MOVE at slot -1 with state ID -1. The inspected 1.21.1 server returns a full menu state for that mismatch. See UPSTREAM-REVIEW.md for the exact methods. Timeouts request a snapshot and quarantine the menu; they never automatically repeat a craft. There is no addon network channel and no server entrypoint.
+The synchronization request is a vanilla no-op QUICK_MOVE at slot -1 with state ID -1. The inspected 1.21.1 server returns a full menu state for that mismatch. Timeouts request a snapshot and quarantine the menu; they never automatically repeat a craft. There is no addon network channel and no server entrypoint.
 
 ## Optional storage protocols
 

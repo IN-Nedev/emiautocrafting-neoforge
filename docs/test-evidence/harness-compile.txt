@@ -1,9 +1,0 @@
-> Task :createMinecraftArtifacts UP-TO-DATE
-> Task :compileJava UP-TO-DATE
-> Task :processResources UP-TO-DATE
-> Task :classes UP-TO-DATE
-> Task :compileTestModJava
-
-BUILD SUCCESSFUL in 2s
-4 actionable tasks: 1 executed, 3 up-to-date
-Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.2.1/userguide/configuration_cache_enabling.html

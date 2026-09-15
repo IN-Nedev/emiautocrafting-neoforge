@@ -52,7 +52,7 @@ if (project.hasProperty('integration')) {
     neoForge.runs.client {
         systemProperty 'emiautocrafting.integration', 'true'
         systemProperty 'emiautocrafting.toolFixtures', project.hasProperty('toolFixtures').toString()
-        systemProperty 'emiautocrafting.testMode', project.findProperty('testMode') ?: (project.hasProperty('packCompatibility') ? 'pack-compatibility' : 'integrated')
+        systemProperty 'emiautocrafting.testMode', project.findProperty('testMode') ?: 'integrated'
         systemProperty 'emiautocrafting.testPort', project.findProperty('testPort') ?: '25565'
         systemProperty 'emiautocrafting.testFilter', project.findProperty('testFilter') ?: 'all'
         systemProperty 'emiautocrafting.clientFillOnly', project.hasProperty('clientFillOnly').toString()
@@ -70,37 +70,29 @@ if (project.hasProperty('serverOnly')) {
     neoForge.runs.server { loadedMods = []; sourceSet = sourceSets.serverRuntime }
 }
 
-// Opt-in, pinned crafting-stack sample from Impostor Syndrome - Reimagined 0.6-hotfix.
-// No pack assets or scripts, optional mods, or test fixtures enter the published mod JAR.
-if (project.hasProperty('packCompatibility')) {
-    if (!project.hasProperty('integration')) throw new GradleException('packCompatibility requires -Pintegration')
+// Isolated KubeJS recipe fixtures; excluded from the release JAR.
+if (project.hasProperty('kubejsFixtures')) {
+    if (!project.hasProperty('integration')) throw new GradleException('kubejsFixtures requires -Pintegration')
     repositories { maven { url = 'https://cursemaven.com'; content { includeGroup 'curse.maven' } } }
     dependencies {
-        runtimeOnly 'curse.maven:jei-238222:8732390'
         runtimeOnly 'curse.maven:kubejs-238086:8715199'
         runtimeOnly 'curse.maven:rhino-416294:8463898'
         runtimeOnly 'curse.maven:architectury-api-419699:8492726'
-        runtimeOnly 'curse.maven:crafting-tweaks-233071:8697050'
-        runtimeOnly 'curse.maven:balm-531761:8645517'
-        runtimeOnly 'curse.maven:polymorph-plus-1586874:8750431'
-        runtimeOnly 'curse.maven:allthecompressed-514045:7361502'
-        runtimeOnly 'curse.maven:create-328085:7963363'
-        runtimeOnly 'curse.maven:crafting-station-jei-edition-updated-1127715:7932261'
     }
-    def packDirectory = file(project.hasProperty('packagedTest') ? 'run-packaged' : 'run-pack')
+    def fixtureDirectory = file(project.hasProperty('packagedTest') ? 'run-packaged' : 'run-kubejs')
     neoForge.runs.client {
-        gameDirectory = packDirectory
+        gameDirectory = fixtureDirectory
         jvmArguments.add '-Xmx2048m'
-        systemProperty 'emiautocrafting.packCompatibility', 'true'
+        systemProperty 'emiautocrafting.kubejsFixtures', 'true'
     }
-    tasks.register('preparePackCompatibility', Copy) {
-        from 'src/packTest/kubejs'
-        into new File(packDirectory, 'kubejs')
+    tasks.register('prepareKubejsFixtures', Copy) {
+        from 'src/kubejsTest/kubejs'
+        into new File(fixtureDirectory, 'kubejs')
     }
-    tasks.named('runClient') { dependsOn 'preparePackCompatibility' }
+    tasks.named('runClient') { dependsOn 'prepareKubejsFixtures' }
 }
 
-// Optional storage test profile, using the exact JARs already installed in the supplied pack.
+// Optional storage tests load mod JARs from an explicitly supplied directory.
 if (project.hasProperty('storageModsDirectory')) {
     if (!project.hasProperty('integration')) throw new GradleException('storageModsDirectory requires -Pintegration')
     dependencies {

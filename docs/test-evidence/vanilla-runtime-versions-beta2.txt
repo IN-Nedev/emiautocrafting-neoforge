@@ -1,8 +1,0 @@
-     Mod List:
-		Name Version (Mod Id)
-
-		EMI 1.1.24+1.21.1+neoforge (emi)
-		EMI Autocrafting 2.0.0-beta.2 (emiautocrafting)
-		EMI Autocrafting Runtime Tests (development only) 1.0.0 (autocrafting_test)
-		Minecraft 1.21.1 (minecraft)
-		NeoForge 21.1.249 (neoforge)

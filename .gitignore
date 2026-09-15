@@ -5,6 +5,5 @@ run/
 *.iml
 run-server/
 .DS_Store
-run-pack/
-run-packaged/
-run-storage/
+.local-testing/
+run-*/

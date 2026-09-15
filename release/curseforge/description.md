@@ -52,7 +52,7 @@ This release supports ordinary shaped/shapeless crafting recipes and plain KubeJ
 
 Planning counts storage exposed by the open interface. Crafting Station can cap displayed oversized stacks, so the initial plan may see less than the chest physically contains. Vanilla tables do not gain nearby-inventory scanning. Space checks reserve room for outputs and returned containers before consuming inputs.
 
-The complete Impostor Syndrome – Reimagined modpack and every multiplayer server configuration are not certified. The beta has automated packaged-JAR coverage for the supported storage integrations; please include your mod versions, recipe, interface and displayed status when [reporting a problem](https://github.com/IN-Nedev/emiautocrafting-neoforge/issues).
+The beta has automated packaged-JAR coverage for the supported storage integrations. Compatibility with every mod combination or custom server is not guaranteed. Include your mod versions, recipe, interface and displayed status when [reporting a problem](https://github.com/IN-Nedev/emiautocrafting-neoforge/issues).
 
 ## Credits and source
 

@@ -1,8 +1,0 @@
-PASS title_screen mods=9
-PATH mode=station-stale-reproduction EMI server=false
-PASS keyboard_event_text_focus (vanilla EditBox and EMI search)
-PASS quantity_dialog_enter_keeps_recipe_and_item_total
-INJECT delayed client block-entity inventory: restore pre-transfer log count
-PASS grouped_batch collapses without cancelling; ordinary favourites preserved; no duplicate synthetic entries
-FAIL storage_station_sophisticated_chain conservation logs=2 planks=0 sticks=0 pickaxes=0
-FAIL storage_station_sophisticated_chain state=BLOCKED count=0 ticks=202 status=Server response timed out; reopen the menu before retrying
