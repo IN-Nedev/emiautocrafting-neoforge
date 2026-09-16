@@ -296,7 +296,7 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
                 && ItemStack.matches(menu.getSlot(outputSlot).getItem(), operation.recipe().getOutputs().getFirst().getItemStack())) {
             var scope = operation.scope();
             var rebased = CappedStock.afterTransfer(scope.project(operation.before()), scope.project(actual), scope.project(prepared.expected()),
-                    storage.revealLimits(operation.beforeSlots(), confirmed.slots(), preparedGrid));
+                    storage.revealLimits(operation.beforeSlots(), confirmed.slots()));
             if (rebased.isPresent()) {
                 if (!scope.matches(actual, operation.before())) EmiAutocrafting.diagnostic("Verified transfer revealed previously capped storage material; rebasing the next craft");
                 prepared = new Operation(Kind.CRAFT, prepared.recipe(), -1, scope.rebase(rebased.get(), actual), actual, confirmed.slots(), prepared.label(), prepared.outstandingBatches(), scope);

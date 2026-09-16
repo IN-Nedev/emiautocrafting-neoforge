@@ -14,6 +14,13 @@ class CappedStockTest {
         assertEquals(Map.of("plank", 4L), CappedStock.afterTransfer(
                 Map.of("log", 1L), Map.of("log", 1L), Map.of("plank", 4L), Map.of()).orElseThrow());
     }
+    @Test void crossingTheCapRebasesOnlyTheRevealedInput() {
+        // 70 real planks display as 64. Moving eight leaves 62 in storage plus eight in grid.
+        assertEquals(Map.of("plank", 62L, "chest", 1L), CappedStock.afterTransfer(
+                Map.of("plank", 64L), Map.of("plank", 70L), Map.of("plank", 56L, "chest", 1L), Map.of("plank", 6L)).orElseThrow());
+        assertTrue(CappedStock.afterTransfer(Map.of("plank", 64L), Map.of("plank", 71L),
+                Map.of("plank", 56L, "chest", 1L), Map.of("plank", 6L)).isEmpty());
+    }
     @Test void lossOrUnrelatedGainCannotConfirmTransfer() {
         var before = Map.of("log", 64L, "diamond", 2L);
         assertTrue(CappedStock.afterTransfer(before, Map.of("log", 65L, "diamond", 1L), before, Map.of("log", 64L)).isEmpty());

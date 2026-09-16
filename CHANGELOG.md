@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-beta.8
+
+- Fix Crafting Station batches stopping when extraction brings an upgraded storage stack below the normal displayed stack limit.
+- Return unused transferred ingredients to their original slots, preventing generic recipe filling from merging upgraded stacks and hiding visible quantities.
+- Bound newly revealed stock by the exact withdrawals from each capped source. Output, remainder and server confirmation checks remain required.
+
 ## 2.0.0-beta.7
 
 - Name blocked recipes and their dependency paths in a readable detail screen, with links to the recipe and tree and copyable diagnostics.

@@ -9,6 +9,7 @@ This is an independent **Minecraft 1.21.1 NeoForge port and derivative of [diges
 - Craft recursive recipe chains, counting final items and intermediates you already have.
 - Use your inventory together with storage exposed by supported crafting interfaces.
 - See the exact missing materials before a batch starts.
+- Inspect a blocked recipe's item, dependency path and selection source with **Why?**, then open its recipe or edit the tree.
 - Keep the active tree in its own collapsible **Craft batch** panel, with progress and Tree/Clear controls.
 - Advance as soon as the previous operation is confirmed, with configurable pacing.
 - Stop a batch with a shortcut or take over with a manual inventory click. Uncertain crafts stop with a reason and are not retried automatically.
@@ -48,7 +49,9 @@ The shortcuts are configurable under **Mods → EMI Autocrafting → Config**. T
 
 ## Current beta limits
 
-This release supports ordinary shaped/shapeless crafting recipes and plain KubeJS wrappers without scripted ingredient actions or output modifiers. Processing machines, arbitrary custom benches, dynamic/chance-based recipes, and network crafting CPU jobs are outside its scope.
+This release supports ordinary shaped/shapeless crafting recipes, plain KubeJS wrappers without scripted ingredient actions or output modifiers, and reviewed Quark mixed-material recipes and exclusion wrappers. Processing machines, arbitrary custom benches, dynamic/chance-based recipes, and network crafting CPU jobs are outside its scope.
+
+Choices made inside an existing tree override global recipe hearts. Removing a sidebar favourite only removes its bookmark. Clear and prepare the batch again to reset local tree choices. Supply finished ingredients for furnace and machine steps.
 
 Planning counts storage exposed by the open interface. Crafting Station can cap displayed oversized stacks, so the initial plan may see less than the chest physically contains. Vanilla tables do not gain nearby-inventory scanning. Space checks reserve room for outputs and returned containers before consuming inputs.
 

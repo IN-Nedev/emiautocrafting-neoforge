@@ -89,8 +89,13 @@ final class StorageFixtures {
             level.setBlockAndUpdate(SECOND_CHEST, Blocks.CHEST.defaultBlockState());
             if (scenario.contains("sophisticated")) {
                 Object wrapper = call(level.getBlockEntity(CHEST), "getStorageWrapper");
-                if (scenario.endsWith("oversized")) call(call(wrapper, "getUpgradeHandler"), "setStackInSlot", 0, new ItemStack(item("sophisticatedstorage:stack_upgrade_tier_1")));
+                if (scenario.endsWith("oversized") || scenario.contains("_cap_")) call(call(wrapper, "getUpgradeHandler"), "setStackInSlot", 0, new ItemStack(item("sophisticatedstorage:stack_upgrade_tier_1")));
                 call(call(wrapper, "getInventoryHandler"), "setStackInSlot", scenario.contains("hidden") ? 100 : 0, new ItemStack(Items.OAK_LOG, logs));
+                if (scenario.contains("_cap_")) {
+                    Object inventory = call(wrapper, "getInventoryHandler");
+                    call(inventory, "setStackInSlot", 0, new ItemStack(Items.OAK_PLANKS, scenario.endsWith("midbatch") ? 122 : 70));
+                    if (scenario.endsWith("multiple")) call(inventory, "setStackInSlot", 1, new ItemStack(Items.OAK_PLANKS, 70));
+                }
                 if (scenario.contains("background")) call(call(wrapper, "getInventoryHandler"), "setStackInSlot", 1, new ItemStack(Items.COMPASS));
             } else for (int i = 0; i < seed.size(); i++)
                 ((Container) level.getBlockEntity(i % 2 == 0 ? CHEST : SECOND_CHEST)).setItem(i / 2, seed.get(i));
@@ -114,6 +119,12 @@ final class StorageFixtures {
     }
 
     static String check(ServerPlayer player, String scenario) {
+        if (scenario.contains("_cap_")) {
+            long chests = amount(player, scenario, Items.CHEST), planks = amount(player, scenario, Items.OAK_PLANKS);
+            int stacks = scenario.endsWith("multiple") ? 2 : 1;
+            boolean pass = chests == 8L * stacks && planks == (scenario.endsWith("midbatch") ? 58L : 6L * stacks);
+            return (pass ? "PASS " : "FAIL ") + scenario + " conservation chests=" + chests + " planks=" + planks;
+        }
         if (scenario.endsWith("quark_manager")) {
             long managers = amount(player, scenario, item("sfm:manager"));
             boolean pass = managers == 1 && java.util.List.of(Items.OAK_LOG, Items.BIRCH_LOG, Items.CHEST, Items.REPEATER, item("sfm:cable"))

@@ -22,6 +22,7 @@ final class StorageCrafting {
     enum Kind { STATION, LECTERN, AE2 }
     private final Kind kind;
     private final AbstractContainerMenu menu;
+    private final Map<Integer, List<Integer>> stationTransfers = new LinkedHashMap<>();
     final List<Integer> grid = new ArrayList<>(), inventory = new ArrayList<>(), sources = new ArrayList<>();
     final int output, slotCount;
 
@@ -104,14 +105,8 @@ final class StorageCrafting {
         };
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     boolean fill(EmiRecipe recipe, List<ItemStack> items, AbstractContainerScreen<?> screen) {
-        if (kind == Kind.STATION) {
-            var handler = handler();
-            return handler.craft(recipe, new EmiCraftContext((AbstractContainerScreen) screen,
-                    handler.getInventory((AbstractContainerScreen) screen), EmiCraftContext.Type.CRAFTABLE,
-                    EmiCraftContext.Destination.NONE, 1));
-        }
+        if (kind == Kind.STATION) return fillStation(items);
         if (kind == Kind.LECTERN) {
             var ingredients = items.stream().map(s -> s.isEmpty() ? List.<ItemStack>of() : List.of(s.copy())).toList();
             send(construct("com.hollingsworth.arsnouveau.common.network.ClientTransferHandlerPacket", new Class<?>[]{List.class}, ingredients));
@@ -125,6 +120,50 @@ final class StorageCrafting {
         return true;
     }
 
+    private boolean fillStation(List<ItemStack> items) {
+        stationTransfers.clear();
+        if (items.size() != grid.size() || !menu.getCarried().isEmpty()
+                || grid.stream().anyMatch(index -> !menu.getSlot(index).getItem().isEmpty())) return false;
+        // Plan every click before sending any. Return each cursor remainder to its original
+        // source: EMI's generic fill can consolidate it into another upgraded stack, hiding
+        // previously visible stock behind the station's normal-stack display cap.
+        for (int i = 0; i < items.size(); i++) {
+            ItemStack item = items.get(i);
+            if (item.isEmpty()) continue;
+            if (item.getCount() != 1 || !menu.getSlot(grid.get(i)).mayPlace(item)) return false;
+            int source = -1;
+            for (int index : sources) {
+                if (grid.contains(index)) continue;
+                Slot slot = menu.getSlot(index);
+                int assigned = stationTransfers.getOrDefault(index, List.of()).size();
+                if (slot.mayPickup(Minecraft.getInstance().player) && slot.mayPlace(item)
+                        && ItemStack.isSameItemSameComponents(slot.getItem(), item)
+                        && slot.getItem().getCount() > assigned) { source = index; break; }
+            }
+            if (source < 0) return false;
+            stationTransfers.computeIfAbsent(source, ignored -> new ArrayList<>()).add(grid.get(i));
+        }
+        for (var transfer : stationTransfers.entrySet()) {
+            int source = transfer.getKey(), count = menu.getSlot(source).getItem().getCount();
+            List<Integer> targets = transfer.getValue();
+            int placed = 0;
+            while (placed < targets.size()) {
+                int remaining = targets.size() - placed;
+                // Sophisticated Storage can redirect insertion into an empty slot to an
+                // existing upgraded stack. Keep the source occupied whenever returning a
+                // remainder; a right-click takes half of its displayed stack.
+                boolean takeAll = count == remaining;
+                int picked = takeAll ? count : (count + 1) / 2;
+                int moved = Math.min(picked, remaining);
+                click(source, takeAll ? 0 : 1);
+                for (int i = 0; i < moved; i++) click(targets.get(placed++), 1);
+                if (picked > moved) click(source);
+                count -= moved;
+            }
+        }
+        return true;
+    }
+
     int outputDestination(ItemStack stack) {
         for (int index : inventory) {
             Slot slot = menu.getSlot(index);
@@ -133,18 +172,22 @@ final class StorageCrafting {
         throw new IllegalArgumentException("Keep one empty inventory slot for verified storage crafting");
     }
 
-    Map<StackKey, Long> revealLimits(List<ItemStack> before, List<ItemStack> after, List<ItemStack> ingredients) {
+    Map<StackKey, Long> revealLimits(List<ItemStack> before, List<ItemStack> after) {
         Map<StackKey, Long> limits = new LinkedHashMap<>();
         if (kind != Kind.STATION) return limits;
-        for (int index : sources) {
-            if (grid.contains(index) || inventory.contains(index)) continue;
+        for (var transfer : stationTransfers.entrySet()) {
+            int index = transfer.getKey();
+            if (inventory.contains(index)) continue;
             ItemStack old = before.get(index), now = after.get(index);
-            // The station exposes at most one normal stack even when the chest holds more.
-            // Only a still-saturated source of an exact transferred ingredient can reveal stock.
-            if (!old.isEmpty() && old.getCount() == old.getMaxStackSize() && now.getCount() == old.getCount()
-                    && ItemStack.isSameItemSameComponents(old, now)
-                    && ingredients.stream().anyMatch(s -> ItemStack.isSameItemSameComponents(old, s)))
-                limits.merge(new StackKey(old), (long) old.getCount(), Math::addExact);
+            // A capped source may stay saturated OR cross below the cap. Only the exact
+            // withdrawn quantity that was not visibly subtracted can reveal hidden stock.
+            if (!old.isEmpty() && old.getCount() == old.getMaxStackSize()
+                    && (now.isEmpty() || ItemStack.isSameItemSameComponents(old, now))) {
+                long visibleDecrease = old.getCount() - now.getCount();
+                long withdrawn = transfer.getValue().size();
+                if (visibleDecrease >= 0 && visibleDecrease <= withdrawn)
+                    limits.merge(new StackKey(old), withdrawn - visibleDecrease, Math::addExact);
+            }
         }
         return limits;
     }
@@ -180,9 +223,10 @@ final class StorageCrafting {
         click(index); click(destination);
     }
 
-    private void click(int index) {
+    private void click(int index) { click(index, 0); }
+    private void click(int index, int button) {
         Minecraft.getInstance().getConnection().send(new ServerboundContainerClickPacket(menu.containerId, -1,
-                index, 0, ClickType.PICKUP, ItemStack.EMPTY, new Int2ObjectOpenHashMap<>()));
+                index, button, ClickType.PICKUP, ItemStack.EMPTY, new Int2ObjectOpenHashMap<>()));
     }
 
     private static void send(Object packet) { PacketDistributor.sendToServer((CustomPacketPayload) packet); }

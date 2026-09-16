@@ -2,6 +2,22 @@
 
 ## Release verification
 
+Version **2.0.0-beta.8** was tested with Java 21, Minecraft 1.21.1, NeoForge 21.1.249 and EMI 1.1.24+1.21.1 for NeoForge.
+
+- **44 unit tests passed**, including bounded reconciliation when an oversized stack crosses below its displayed limit.
+- **17 gameplay scenarios passed** using the packaged release JAR and client-only transfers: nine station regressions and eight compatibility cases, with 39 total assertions including startup, UI and item conservation.
+- Upgraded-stack cases crafted eight chests from 70 planks, eight from 122 planks (crossing the cap midway), and sixteen from two stacks of 70. Server-side conservation checks confirmed the expected remaining planks and chest totals.
+- Existing oversized-stack handling, hidden source slots, unrelated item metadata changes, a 192-plank batch, and returned cake buckets passed. A delayed client block-entity update was injected in the oversized-stack case.
+- Quark mixed-material and exclusion recipes passed, with invalid single-wood input rejected. Factory Manager crafting completed through both Crafting Station and the Bookwyrm lectern using connected storage. AE2 recursive crafting and tree preference diagnostics also passed.
+
+The new boundary and multiple-stack cases failed against beta 7 with all inputs still present. The failures were displayed-count mismatches, not material loss. Beta 8 keeps a source occupied when returning leftover ingredients and permits only bounded material revealed by the exact withdrawals.
+
+The tests use disposable integrated-server worlds with EMI's `onServer` flag forced false. They do not establish dedicated-server-without-EMI compatibility or cover every storage upgrade and mod combination.
+
+Release SHA-256: `6a383cf1d87c8bdf890e11e276f754ea3c1422b8ea45f670b8033e93275797cd`.
+
+## Previous release: beta 7
+
 Version **2.0.0-beta.7** was tested with Java 21, Minecraft 1.21.1, NeoForge 21.1.249 and EMI 1.1.24+1.21.1 for NeoForge.
 
 - **43 unit tests passed**, including preservation of the first blocked dependency and use of supplied intermediates.
@@ -64,6 +80,8 @@ To test storage integrations, supply a directory containing the compatible mods 
 ```
 
 Use `-PtestFilter=name1,name2` to select scenarios, `-PstationOnly` to load only Crafting Station and Sophisticated Storage, or `-PstaleStorageUpdate` to reproduce delayed client inventory updates. Read `runtime-tests-<mode>.txt` in the run directory; a successful process exit alone does not establish a gameplay pass.
+
+The stack-upgrade regressions are `storage_station_sophisticated_cap_boundary`, `storage_station_sophisticated_cap_midbatch`, and `storage_station_sophisticated_cap_multiple`. They use real stack upgrades and verify total item conservation on the test server.
 
 For Quark recipe tests, supply Quark, Zeta and Super Factory Manager with `-PquarkModsDirectory`. Combine it with the storage profile to exercise the same recipe through a lectern:
 

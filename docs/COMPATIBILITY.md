@@ -23,6 +23,8 @@ Existing outputs and intermediates count toward the requested total. Recipes are
 
 Armour, offhand, locked slots and AE2 craftable-only patterns are excluded. Vanilla tables do not gain nearby-storage access. Crafting Station reports the quantities exposed by its native slots; capped oversized stacks can make the initial plan see less than the chest contains. Material revealed during transfer is accounted for before output pickup.
 
+Stack upgrades are supported during repeated crafting, including when a source drops below its displayed stack limit. Crafting Station transfers keep sources occupied when returning unused ingredients, preventing Sophisticated Storage from redirecting those items into another upgraded stack. The initial displayed-count limitation still applies.
+
 ## Execution limits
 
 - Start with an empty grid and cursor. Storage crafting requires an empty player inventory slot for collecting output.

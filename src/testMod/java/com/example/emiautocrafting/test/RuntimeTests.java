@@ -81,7 +81,8 @@ public class RuntimeTests {
             CASES.add(new Scenario("quark_exclusion_glass", "quark:tweaks/crafting/glass/mixed_dirty_glass", null, 1, 1, null,
                     List.of("give @s quark:red_shard 4", "give @s quark:blue_shard 1"), false));
             if (Boolean.getBoolean("emiautocrafting.storageCompatibility"))
-                CASES.add(new Scenario("storage_lectern_quark_manager", "sfm:manager", null, 1, 1, null, List.of(), false));
+                for (String menu : List.of("lectern", "station"))
+                    CASES.add(new Scenario("storage_" + menu + "_quark_manager", "sfm:manager", null, 1, 1, null, List.of(), false));
         }
     }
     static {
@@ -108,6 +109,9 @@ public class RuntimeTests {
             CASES.add(new Scenario("storage_station_sophisticated_hidden_chain", "wooden_pickaxe", Items.WOODEN_PICKAXE, 1, 1, null, List.of(), false));
             CASES.add(new Scenario("storage_station_sophisticated_background_chain", "wooden_pickaxe", Items.WOODEN_PICKAXE, 1, 1, null, List.of(), false));
             CASES.add(new Scenario("storage_station_sophisticated_background_oversized", "oak_planks", Items.OAK_PLANKS, 4, 4, null, List.of(), false));
+            CASES.add(new Scenario("storage_station_sophisticated_cap_boundary", "chest", Items.CHEST, 8, 8, null, List.of(), false));
+            CASES.add(new Scenario("storage_station_sophisticated_cap_midbatch", "chest", Items.CHEST, 8, 8, null, List.of(), false));
+            CASES.add(new Scenario("storage_station_sophisticated_cap_multiple", "chest", Items.CHEST, 16, 16, null, List.of(), false));
             for (String menu : List.of("station", "lectern", "ae2")) {
                 CASES.add(new Scenario("storage_"+menu+"_chain", "wooden_pickaxe", Items.WOODEN_PICKAXE, 1, 1, null, List.of(), false));
                 CASES.add(new Scenario("storage_"+menu+"_missing", "wooden_pickaxe", Items.WOODEN_PICKAXE, 1, 0, "Missing", List.of(), false));
