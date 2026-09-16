@@ -31,6 +31,7 @@ public final class JobSidebar implements EmiPlugin {
     private static MenuPort preview;
 
     public void register(EmiRegistry registry) {
+        QuarkRecipes.register(registry);
         registry.addGenericExclusionArea((screen, consumer) -> { Bounds b = bounds(screen); if (b != null) consumer.accept(b); });
         registry.addGenericStackProvider((screen, x, y) -> {
             EmiFavorite.Synthetic item = hovered(screen, x, y);
@@ -110,6 +111,7 @@ public final class JobSidebar implements EmiPlugin {
         }
         g.fill(b.x() + 4, b.bottom() - 21, b.right() - 4, b.bottom() - 20, 0xFF42606F);
         g.drawString(font, "Tree", b.x() + 5, b.bottom() - 13, 0xA9DDE8);
+        if (EmiAutocrafting.problem() != null) g.drawString(font, "Why?", b.x() + 40, b.bottom() - 13, 0xFFBB88);
         g.drawString(font, "Clear", b.right() - 32, b.bottom() - 13, 0xC6CDD2);
         if (pages(b) > 1 && mouseX >= b.x() && mouseX < b.right() && mouseY >= b.y() && mouseY < b.y() + 22)
             g.renderTooltip(font, Component.literal("Scroll batch: page " + (page + 1) + "/" + pages(b)), mouseX, mouseY);
@@ -129,7 +131,9 @@ public final class JobSidebar implements EmiPlugin {
             if (x >= b.right() - 38) {
                 BoM.tree = null; BoM.craftingMode = false; tracked = null; entries = List.of();
                 EmiFavorites.syntheticFavorites.clear(); EmiScreenManager.forceRecalculate();
-            } else EmiApi.viewRecipeTree();
+                EmiAutocrafting.clearProblem();
+            } else if (x >= b.x() + 38 && EmiAutocrafting.problem() != null) EmiAutocrafting.showProblem(screen);
+            else EmiApi.viewRecipeTree();
         } else {
             EmiFavorite.Synthetic item = hovered(screen, x, y);
             if (item != null) {

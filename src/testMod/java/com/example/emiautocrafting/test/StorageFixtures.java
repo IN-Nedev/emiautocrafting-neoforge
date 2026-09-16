@@ -57,6 +57,8 @@ final class StorageFixtures {
         var seed = scenario.endsWith("buckets") ? java.util.List.of(new ItemStack(Items.MILK_BUCKET), new ItemStack(Items.MILK_BUCKET),
                 new ItemStack(Items.MILK_BUCKET), new ItemStack(Items.WHEAT, 3), new ItemStack(Items.SUGAR, 2), new ItemStack(Items.EGG))
                 : java.util.List.of(new ItemStack(Items.OAK_LOG, logs - logs / 2), new ItemStack(Items.OAK_LOG, logs / 2));
+        if (scenario.endsWith("quark_manager")) seed = java.util.List.of(new ItemStack(Items.OAK_LOG, 7),
+                new ItemStack(Items.BIRCH_LOG), new ItemStack(item("sfm:cable"), 4), new ItemStack(Items.REPEATER));
         var level = player.serverLevel();
         level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
                 new net.minecraft.world.phys.AABB(TABLE).inflate(10)).forEach(net.minecraft.world.entity.Entity::discard);
@@ -112,6 +114,12 @@ final class StorageFixtures {
     }
 
     static String check(ServerPlayer player, String scenario) {
+        if (scenario.endsWith("quark_manager")) {
+            long managers = amount(player, scenario, item("sfm:manager"));
+            boolean pass = managers == 1 && java.util.List.of(Items.OAK_LOG, Items.BIRCH_LOG, Items.CHEST, Items.REPEATER, item("sfm:cable"))
+                    .stream().allMatch(item -> amount(player, scenario, item) == 0);
+            return (pass ? "PASS " : "FAIL ") + scenario + " conservation managers=" + managers + " ingredients consumed once";
+        }
         if (scenario.endsWith("buckets")) {
             long cake = amount(player, scenario, Items.CAKE), buckets = amount(player, scenario, Items.BUCKET);
             boolean pass = cake == 1 && buckets == 3 && java.util.List.of(Items.MILK_BUCKET, Items.WHEAT, Items.SUGAR, Items.EGG).stream()

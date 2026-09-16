@@ -37,6 +37,7 @@ public final class EmiAutocrafting {
     private static long ticks, feedbackUntil;
     private static String feedback = "";
     private static MenuPort port;
+    private static CraftingProblem lastProblem;
     private static final JobController<MenuPort.Operation> JOB = new JobController<>();
     private static final Set<Integer> PRESSED = new HashSet<>();
     private static AbstractContainerMenu quarantined;
@@ -51,10 +52,15 @@ public final class EmiAutocrafting {
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, EmiAutocrafting::mouse);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, EmiAutocrafting::scroll);
         NeoForge.EVENT_BUS.addListener(EmiAutocrafting::logout);
-        LOG.info("EMI Autocrafting 2.0.0-beta.6: Minecraft 1.21.1, NeoForge 21.1.249, EMI 1.1.24");
+        LOG.info("EMI Autocrafting 2.0.0-beta.7: Minecraft 1.21.1, NeoForge 21.1.249, EMI 1.1.24");
     }
     public static JobController.State state() { return JOB.state(); }
     public static String status() { return JOB.message(); }
+    public static CraftingProblem problem() { return lastProblem; }
+    public static void clearProblem() { lastProblem = null; }
+    public static void showProblem(Screen parent) {
+        if (lastProblem != null) Minecraft.getInstance().setScreen(new CraftingProblemScreen(parent, lastProblem));
+    }
     public static void feedback(String text) { feedback = text; feedbackUntil = ticks + 200; diagnostic("Autocrafting feedback: {}", text); }
     public static void quarantine(AbstractContainerMenu menu) { quarantined = menu; mustReopenInventory = true; }
     public static void diagnostic(String message, Object... arguments) {
@@ -80,8 +86,12 @@ public final class EmiAutocrafting {
                 String message = JOB.message();
                 if (JOB.state() == JobController.State.COMPLETED && message.equals("Completed")) message = "Completed: " + port.total() + " " + port.targetLabel() + " (batch surplus retained)";
                 feedback(message);
-                if (JOB.state() == JobController.State.BLOCKED && !port.missing().isEmpty() && mc.screen != null)
-                    mc.setScreen(new MissingItemsScreen(mc.screen, port.missing(), port.inventoryLabel()));
+                if (JOB.state() == JobController.State.BLOCKED && mc.screen != null) {
+                    if (port.problem() != null) {
+                        lastProblem = port.problem(); LOG.info("Crafting blocked:\n{}", lastProblem.report());
+                        showProblem(mc.screen);
+                    } else if (!port.missing().isEmpty()) mc.setScreen(new MissingItemsScreen(mc.screen, port.missing(), port.inventoryLabel()));
+                }
                 if (EmiAutocraftingConfig.DIAGNOSTICS.get()) LOG.info("Autocrafting state={} target={} message={}", JOB.state(), port.targetLabel(), message);
             }
         }
@@ -98,6 +108,8 @@ public final class EmiAutocrafting {
             feedback("Reopen the crafting interface to check inventory before retrying"); return false;
         }
         try {
+            clearProblem();
+            dev.emi.emi.bom.BoM.tree.recalculate();
             port = new MenuPort(screen, EmiBridge.freeze());
             JobSidebar.track(EmiBridge.freeze().tree());
             Minecraft.getInstance().setScreen(screen);
@@ -130,7 +142,7 @@ public final class EmiAutocrafting {
     }
     private static void keyReleased(ScreenEvent.KeyReleased.Pre event) { PRESSED.remove(event.getKeyCode()); }
     private static void logout(ClientPlayerNetworkEvent.LoggingOut event) {
-        cancel(); PRESSED.clear(); JobSidebar.reset();
+        cancel(); PRESSED.clear(); JobSidebar.reset(); clearProblem();
     }
     private static void mouse(ScreenEvent.MouseButtonPressed.Pre event) {
         if (JobSidebar.click(event.getScreen(), event.getMouseX(), event.getMouseY(), event.getButton())) { event.setCanceled(true); return; }

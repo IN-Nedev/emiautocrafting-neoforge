@@ -33,6 +33,10 @@ The addon is not required on the server. It uses EMI's server-assisted filling w
 
 The **Craft batch** panel shows progress and ingredients separately from favourites. Collapse it while crafting, use **Tree** to edit the plan, or **Clear** to remove it. Missing materials appear in a scrollable list before crafting begins.
 
+If a recipe blocks the batch, a detail screen names the item, selected recipe, and dependency path. Use **View recipe** or **Edit tree** to inspect it; **Why?** in the batch panel reopens the last error. **Copy details** includes the recipe identifier and implementation for bug reports.
+
+EMI hearts choose preferred recipes. Choices made inside an individual tree take priority over hearts; removing a sidebar favourite does not change recipe choices. Clear the batch and prepare it again to discard choices made inside that tree. Furnace and machine steps must be supplied as finished ingredients.
+
 ![Craft batch beside a crafting interface](docs/images/craft-batch.png)
 
 Shortcuts, pacing and timeouts are configurable in **Mods → EMI Autocrafting → Config**. Shortcuts do not intercept normal editing in text fields. Manual inventory clicks, closing the interface, disconnecting or changing the recipe tree stop further actions.
@@ -44,7 +48,7 @@ Shortcuts, pacing and timeouts are configurable in **Mods → EMI Autocrafting �
 - Ars Nouveau storage lecterns with the Bookwyrm crafting upgrade and linked inventories.
 - Applied Energistics 2 crafting terminals, using stored items.
 
-Storage integrations are optional. The addon supports standard shaped/shapeless recipes and plain KubeJS wrappers. It does not run processing machines, scripted output/ingredient actions, or AE2 crafting CPU jobs. See [compatibility](docs/COMPATIBILITY.md) for supported versions and limitations.
+Storage integrations are optional. The addon supports standard shaped/shapeless recipes, plain KubeJS wrappers, and Quark mixed-material recipes. It does not run processing machines, scripted output/ingredient actions, or AE2 crafting CPU jobs. See [compatibility](docs/COMPATIBILITY.md) for supported versions and limitations.
 
 The next operation starts after the previous one is confirmed. Failed synchronization stops the batch without retrying an uncertain craft; reopen the interface before restarting.
 

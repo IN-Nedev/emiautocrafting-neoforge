@@ -57,6 +57,18 @@ class TreePlannerTest {
         assertTrue(plan(machine,1,Map.of("plate",1L)).complete());
         assertEquals("Requires a machine",plan(machine,1,Map.of()).obstacle());
     }
+    @Test void blockedRecipeKeepsItsDependencyPathAndFirstCause() {
+        var stone = new TreePlanner.Node<String,String>("Stone", List.of("stone"), 3, "stone", 1,
+                "smelting/stone", List.of(), List.of(), false, "Requires smelting");
+        var coal = new TreePlanner.Node<String,String>("Charcoal", List.of("coal"), 1, "coal", 1,
+                "smelting/charcoal", List.of(), List.of(), false, "Requires smelting");
+        var root = node("Manager", 1, 1, "manager", List.of(node("Repeater", 1, 1, "repeater", List.of(stone)), coal));
+        var p = plan(root, 1, Map.of());
+        assertSame(stone, p.blockedNode());
+        assertEquals(List.of("Manager", "Repeater", "Stone"), p.blockedPath());
+        var supplied = plan(root, 1, Map.of("stone", 3L, "coal", 1L));
+        assertNull(supplied.obstacle()); assertNull(supplied.blockedNode()); assertTrue(supplied.blockedPath().isEmpty());
+    }
     @Test void unresolvedAndMissingAreExplicit() {
         assertEquals(2L,plan(leaf("iron",1),3,Map.of("iron",1L)).missing().get("iron"));
         var unresolved=new TreePlanner.Node<String,String>("plank",List.of("plank"),1,"plank",1,null,List.of(),List.of(),false,"Select a recipe");

@@ -3,6 +3,7 @@ package com.example.emiautocrafting.emi;
 
 import com.example.emiautocrafting.core.TreePlanner;
 import com.example.emiautocrafting.core.Quantities;
+import com.example.emiautocrafting.client.CraftingCompatibility;
 import dev.emi.emi.EmiPort;
 import dev.emi.emi.api.EmiApi;
 import dev.emi.emi.api.recipe.*;
@@ -60,6 +61,7 @@ public final class EmiBridge {
         BoM.tree.batches = total;
         BoM.tree.recalculate();
         BoM.craftingMode = true;
+        com.example.emiautocrafting.EmiAutocrafting.clearProblem();
         JobSidebar.track(BoM.tree);
     }
     public static Frozen freeze() {
@@ -107,8 +109,14 @@ public final class EmiBridge {
         boolean addedToPath = recipe != null && path.add(recipe);
         if (recipe != null && !addedToPath) obstacle = "Cyclic recipe: " + label;
         if (node.consumeChance != 1 || node.produceChance != 1) obstacle = "Chance-based recipes are not supported: " + label;
-        if (recipe != null && recipe.getCategory() != VanillaEmiRecipeCategories.CRAFTING) obstacle = "Requires an unsupported machine: " + label;
+        if (recipe != null && recipe.getCategory() != VanillaEmiRecipeCategories.CRAFTING)
+            obstacle = "Requires " + recipe.getCategory().getName().getString() + "; supply the processed item or choose a crafting recipe";
         if (recipe != null && (recipe.getOutputs().size() != 1 || !recipe.supportsRecipeTree())) obstacle = "Unsupported dynamic recipe: " + label;
+        if (recipe != null && obstacle == null) {
+            var raw = rawRecipe(recipe);
+            if (raw != null) try { CraftingCompatibility.verify(raw.value()); }
+            catch (IllegalArgumentException error) { obstacle = error.getMessage(); }
+        }
         List<TreePlanner.Node<StackKey, EmiRecipe>> children = new ArrayList<>();
         List<TreePlanner.Returned<StackKey>> returned = new ArrayList<>();
         if (obstacle == null && node.children != null) {
@@ -135,7 +143,9 @@ public final class EmiBridge {
         }
         return (StandardRecipeHandler<AbstractContainerMenu>) handler;
     }
-    public static RecipeHolder<?> rawRecipe(EmiRecipe recipe) { return EmiPort.getRecipe(recipe.getId()); }
+    public static RecipeHolder<?> rawRecipe(EmiRecipe recipe) {
+        return recipe == null || recipe.getId() == null ? null : EmiPort.getRecipe(recipe.getId());
+    }
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static boolean fill(EmiRecipe recipe, AbstractContainerScreen<?> screen, long outstandingBatches) {
         return EmiRecipeFiller.performFill(recipe, (AbstractContainerScreen) screen, EmiCraftContext.Type.CRAFTABLE,

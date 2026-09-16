@@ -64,8 +64,26 @@ public class RuntimeTests {
         new Scenario("closed_gui","wooden_pickaxe",Items.WOODEN_PICKAXE,1,0,"CANCELLED",List.of("give @s oak_log 2"),false),
         new Scenario("server_rejects","oak_planks",Items.OAK_PLANKS,4,0,"timed out",List.of("give @s oak_log 1","gamerule doLimitedCrafting true","recipe take @s *"),false),
         new Scenario("player_four_input_shapeless","autocrafting_test:four_input_shapeless",Items.CLOCK,1,1,null,List.of("give @s oak_planks 1","give @s birch_planks 1","give @s stick 1","give @s copper_ingot 1"),true),
-        new Scenario("player_requires_3x3","wooden_pickaxe",Items.WOODEN_PICKAXE,1,0,"3×3",List.of("give @s oak_planks 3","give @s stick 2"),true)
+        new Scenario("player_requires_3x3","wooden_pickaxe",Items.WOODEN_PICKAXE,1,0,"3×3",List.of("give @s oak_planks 3","give @s stick 2"),true),
+        new Scenario("tree_smelting_blocked","repeater",Items.REPEATER,1,0,"Requires",List.of("give @s cobblestone 3","give @s redstone_torch 2","give @s redstone 1"),false),
+        new Scenario("tree_stored_stone","repeater",Items.REPEATER,1,1,null,List.of("give @s stone 3","give @s redstone_torch 2","give @s redstone 1"),false),
+        new Scenario("tree_unhearted_stone","repeater",Items.REPEATER,1,0,"Missing",List.of("give @s cobblestone 3","give @s redstone_torch 2","give @s redstone 1"),false),
+        new Scenario("tree_local_stone_choice","repeater",Items.REPEATER,1,0,"Requires",List.of("give @s cobblestone 3","give @s redstone_torch 2","give @s redstone 1"),false)
     ));
+    static {
+        if (Boolean.getBoolean("emiautocrafting.quarkCompatibility")) {
+            CASES.add(new Scenario("quark_mixed_chests", "quark:building/crafting/chests/mixed_chest_wood", Items.CHEST, 4, 4, null,
+                    List.of("give @s oak_log 7", "give @s birch_log 1"), false));
+            CASES.add(new Scenario("quark_same_wood", "quark:building/crafting/chests/mixed_chest_wood", Items.CHEST, 4, 0, "mixed-material",
+                    List.of("give @s oak_log 8"), false));
+            CASES.add(new Scenario("quark_factory_manager", "sfm:manager", null, 1, 1, null,
+                    List.of("give @s oak_log 7", "give @s birch_log 1", "give @s sfm:cable 4", "give @s repeater 1"), false));
+            CASES.add(new Scenario("quark_exclusion_glass", "quark:tweaks/crafting/glass/mixed_dirty_glass", null, 1, 1, null,
+                    List.of("give @s quark:red_shard 4", "give @s quark:blue_shard 1"), false));
+            if (Boolean.getBoolean("emiautocrafting.storageCompatibility"))
+                CASES.add(new Scenario("storage_lectern_quark_manager", "sfm:manager", null, 1, 1, null, List.of(), false));
+        }
+    }
     static {
         if(Boolean.getBoolean("emiautocrafting.toolFixtures")) {
             CASES.add(new Scenario("reusable_tool","autocrafting_test:reusable_tool",Items.GOLD_NUGGET,4,4,null,List.of("give @s autocrafting_test:test_stamp 1","give @s iron_ingot 4"),false));
@@ -237,11 +255,19 @@ public class RuntimeTests {
                     System.out.println("[KUBEJS RECIPE] "+recipe.getId()+" raw="+(raw==null?"missing":raw.value().getClass().getName()));
                 }
                 var preferredIds = new ArrayList<>(List.of("minecraft:oak_planks","minecraft:stick"));
+                if (c.name().startsWith("tree_")) preferredIds.add("minecraft:stone");
+                if (c.name().contains("quark_")) preferredIds.add("quark:building/crafting/chests/mixed_chest_wood");
                 for(String id:preferredIds){
                     var preferred=EmiApi.getRecipeManager().getRecipe(ResourceLocation.parse(id));if(preferred!=null)BoM.addRecipe(preferred);
                 }
                 EmiBridge.prepare(new EmiBridge.Selection(recipe,recipe.getOutputs().getFirst(),c.target()),c.target());
-                if(!c.name().equals("modded_components_alternative"))resolve(BoM.tree.goal,new HashSet<>());
+                if (c.name().contains("quark_")) resolveChests(BoM.tree.goal, new HashSet<>());
+                else if(!c.name().equals("modded_components_alternative"))resolve(BoM.tree.goal,new HashSet<>());
+                if (c.name().equals("tree_unhearted_stone") || c.name().equals("tree_local_stone_choice")) {
+                    var smelting = EmiApi.getRecipeManager().getRecipe(ResourceLocation.parse("minecraft:stone"));
+                    if (c.name().equals("tree_local_stone_choice")) BoM.tree.addResolution(EmiStack.of(Items.STONE), smelting);
+                    BoM.removeRecipe(smelting);
+                }
                 if(c.name().equals("preexisting_grid")||c.name().equals("occupied_cursor")) {
                     int id=MC.player.containerMenu.containerId;
                     MC.gameMode.handleInventoryMouseClick(id,37,0,ClickType.PICKUP,MC.player);
@@ -281,8 +307,24 @@ public class RuntimeTests {
                 if (state==JobController.State.WAITING && c.name().equals("closed_gui")) { MC.player.closeContainer(); MC.setScreen(null); }
                 if (state==JobController.State.WAITING && c.name().equals("changed_tree")) BoM.tree.batches++;
                 if(state==JobController.State.COMPLETED||state==JobController.State.BLOCKED||state==JobController.State.FAILED||state==JobController.State.CANCELLED){
-                    long count=MC.player.getInventory().items.stream().filter(s->s.is(c.output())).mapToLong(ItemStack::getCount).sum();
+                    Item output = c.output() == null ? BoM.tree.goal.ingredient.getEmiStacks().getFirst().getItemStack().getItem() : c.output();
+                    long count=MC.player.getInventory().items.stream().filter(s->s.is(output)).mapToLong(ItemStack::getCount).sum();
                     boolean pass=c.blocked()==null?state==JobController.State.COMPLETED&&count==c.expected():c.blocked().equals("CANCELLED")?state==JobController.State.CANCELLED:state==JobController.State.BLOCKED&&EmiAutocrafting.status().toLowerCase(Locale.ROOT).contains(c.blocked().toLowerCase(Locale.ROOT));
+                    if (c.name().equals("tree_smelting_blocked") || c.name().equals("tree_local_stone_choice")) {
+                        var problem = EmiAutocrafting.problem();
+                        pass &= problem != null && problem.recipeId().equals("minecraft:stone") && problem.item().equals("Stone")
+                                && problem.path().equals(List.of("Redstone Repeater", "Stone"))
+                                && MC.screen instanceof com.example.emiautocrafting.client.CraftingProblemScreen;
+                        if (c.name().equals("tree_local_stone_choice")) pass &= problem != null && problem.selection().contains("inside this tree");
+                        pass &= MC.player.getInventory().countItem(Items.COBBLESTONE) == 3;
+                    }
+                    if (c.name().equals("tree_unhearted_stone")) pass &= EmiAutocrafting.problem() == null;
+                    if (c.name().equals("quark_same_wood")) {
+                        pass &= MC.player.getInventory().countItem(Items.OAK_LOG) == 8
+                                && EmiAutocrafting.problem() != null
+                                && EmiAutocrafting.problem().recipeId().equals(c.recipe())
+                                && MC.player.containerMenu.slots.stream().skip(1).limit(9).allMatch(s -> s.getItem().isEmpty());
+                    }
                     if(c.name().equals("damageable_tool_breaks"))pass&=count==3;
                     if(c.name().startsWith("storage_")) {
                         var id=MC.player.getUUID();
@@ -329,6 +371,12 @@ public class RuntimeTests {
             }
         }
         if(n.children!=null)for(MaterialNode child:List.copyOf(n.children))resolve(child,new HashSet<>(path));
+    }
+    private void resolveChests(MaterialNode node, Set<EmiRecipe> path) {
+        if (node.recipe != null && !path.add(node.recipe)) return;
+        if (node.ingredient.getEmiStacks().size() > 1 && node.ingredient.getEmiStacks().stream().anyMatch(s -> s.getItemStack().is(Items.CHEST)))
+            BoM.tree.addResolution(node.ingredient, new EmiResolutionRecipe(node.ingredient, EmiStack.of(Items.CHEST)));
+        if (node.children != null) for (var child : List.copyOf(node.children)) resolveChests(child, new HashSet<>(path));
     }
 
     private void testControls(EmiRecipe recipe) {

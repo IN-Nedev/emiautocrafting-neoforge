@@ -17,7 +17,8 @@ public final class TreePlanner<K, R> {
         }
     }
     public record Step<K, R>(Node<K, R> node, long batches, Map<K, Long> available) {}
-    public record Plan<K, R>(List<Step<K, R>> steps, Map<String, Long> missing, String obstacle) {
+    public record Plan<K, R>(List<Step<K, R>> steps, Map<String, Long> missing, String obstacle,
+            Node<K, R> blockedNode, List<String> blockedPath) {
         public boolean complete() { return steps.isEmpty() && missing.isEmpty() && obstacle == null; }
     }
     private final LinkedHashMap<K, Long> stock = new LinkedHashMap<>();
@@ -25,17 +26,30 @@ public final class TreePlanner<K, R> {
     private final Map<String, Long> missing = new LinkedHashMap<>();
     private final Set<R> path = new HashSet<>();
     private String obstacle;
+    private Node<K, R> blockedNode;
+    private List<String> blockedPath = List.of();
+    private final List<String> labels = new ArrayList<>();
     private int visits;
 
     public Plan<K, R> plan(Node<K, R> root, long total, Map<K, Long> inventory) {
-        stock.clear(); steps.clear(); missing.clear(); path.clear(); obstacle = null; visits = 0;
+        stock.clear(); steps.clear(); missing.clear(); path.clear(); labels.clear();
+        obstacle = null; blockedNode = null; blockedPath = List.of(); visits = 0;
         if (total <= 0) throw new IllegalArgumentException("Target must be positive");
         inventory.forEach((k, v) -> { if (v < 0) throw new IllegalArgumentException("Negative stock"); stock.put(k, v); });
         demand(root, total, 0);
-        return new Plan<>(List.copyOf(steps), Map.copyOf(missing), obstacle);
+        return new Plan<>(List.copyOf(steps), Collections.unmodifiableMap(new LinkedHashMap<>(missing)), obstacle, blockedNode, blockedPath);
     }
     private void demand(Node<K, R> node, long requested, int depth) {
-        if (++visits > 4096 || depth > 64) { obstacle = "Recipe tree is too large or cyclic"; return; }
+        labels.add(node.label());
+        try { demandNode(node, requested, depth); }
+        finally { labels.removeLast(); }
+    }
+    private void block(Node<K, R> node, String reason) {
+        if (obstacle != null) return;
+        obstacle = reason; blockedNode = node; blockedPath = List.copyOf(labels);
+    }
+    private void demandNode(Node<K, R> node, long requested, int depth) {
+        if (++visits > 4096 || depth > 64) { block(node, "Recipe tree is too large or cyclic"); return; }
         long left = requested;
         for (K key : node.alternatives()) {
             long take = Math.min(left, stock.getOrDefault(key, 0L));
@@ -44,11 +58,11 @@ public final class TreePlanner<K, R> {
             if (left == 0) break;
         }
         if (left == 0) return;
-        if (node.obstacle() != null) { obstacle = node.obstacle(); return; }
+        if (node.obstacle() != null) { block(node, node.obstacle()); return; }
         if (node.recipe() == null) {
             missing.merge(node.label(), left, Math::addExact); return;
         }
-        if (!path.add(node.recipe())) { obstacle = "Cyclic recipe: " + node.label(); return; }
+        if (!path.add(node.recipe())) { block(node, "Cyclic recipe: " + node.label()); return; }
         try {
             long batches = Quantities.batches(left, node.outputCount());
             long produced = Math.multiplyExact(batches, node.outputCount());

@@ -31,6 +31,7 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
     private Operation prepared;
     private List<ItemStack> preparedGrid;
     private Map<String, Long> missing = Map.of();
+    private CraftingProblem problem;
     private final List<Integer> inventory = new ArrayList<>(), accessible = new ArrayList<>();
     private final long recipeEpoch;
     private long sequence;
@@ -60,6 +61,7 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
     public long total() { return tree.total(); }
     public String targetLabel() { return tree.output().getItemStack().getHoverName().getString(); }
     public Map<String, Long> missing() { return missing; }
+    public CraftingProblem problem() { return problem; }
     public String inventoryLabel() { return storage == null ? "Player inventory" : "Player inventory + " + storage.label(); }
     public boolean valid() {
         return mc.player != null && mc.level != null && mc.getConnection() != null && mc.screen == screen
@@ -110,7 +112,10 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         var planned = new TreePlanner<StackKey, EmiRecipe>().plan(root, tree.total(), stock);
         missing = Collections.unmodifiableMap(new LinkedHashMap<>(planned.missing()));
         EmiBridge.updateSidebar(stock);
-        if (planned.obstacle() != null) return JobController.Decision.blocked(planned.obstacle());
+        if (planned.obstacle() != null) {
+            var blocked = planned.blockedNode();
+            return blocked(blocked, planned.blockedPath(), planned.obstacle());
+        }
         if (!planned.missing().isEmpty()) {
             var first = planned.missing().entrySet().iterator().next();
             return JobController.Decision.blocked("Missing: " + first.getValue() + " " + first.getKey()
@@ -119,7 +124,20 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         if (planned.steps().isEmpty()) return JobController.Decision.blocked("No supported step can make progress");
         var next = planned.steps().getFirst();
         try { return JobController.Decision.ready(preflight(next, stock)); }
-        catch (IllegalArgumentException error) { return JobController.Decision.blocked(error.getMessage()); }
+        catch (IllegalArgumentException error) {
+            List<String> path = new ArrayList<>(); findPath(root, next.node(), path);
+            return blocked(next.node(), path, error.getMessage());
+        }
+    }
+    private JobController.Decision<Operation> blocked(TreePlanner.Node<StackKey, EmiRecipe> node, List<String> path, String reason) {
+        problem = CraftingProblem.of(tree, node.label(), node.recipe(), path, reason);
+        return JobController.Decision.blocked(problem.summary());
+    }
+    private static boolean findPath(TreePlanner.Node<StackKey, EmiRecipe> root, TreePlanner.Node<StackKey, EmiRecipe> target, List<String> path) {
+        path.add(root.label());
+        if (root == target) return true;
+        for (var child : root.inputs()) if (findPath(child, target, path)) return true;
+        path.removeLast(); return false;
     }
     private Operation preflight(TreePlanner.Step<StackKey, EmiRecipe> step, Map<StackKey, Long> before) {
         EmiRecipe recipe = step.node().recipe();
@@ -137,8 +155,24 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         Map<StackKey, Long> used = new LinkedHashMap<>();
         // Backtracking avoids greedy failure for overlapping alternatives (at most nine recipe slots).
         List<ItemStack> selected = new ArrayList<>(Collections.nCopies(recipe.getInputs().size(), ItemStack.EMPTY));
-        if (!assign(recipe.getInputs(), 0, budget, selected, new int[]{0}))
-            throw new IllegalArgumentException("Required recipe ingredients are not available without using reserved materials");
+        java.util.function.Predicate<List<ItemStack>> accepts = choices -> {
+            if (!CraftingCompatibility.constrainedMaterials(raw)) return true;
+            List<ItemStack> candidate = new ArrayList<>(Collections.nCopies(gridEnd, ItemStack.EMPTY));
+            for (int i = 0; i < choices.size(); i++) {
+                if (choices.get(i).isEmpty()) continue;
+                if (i >= targetSlots.size() || targetSlots.get(i) == null) return false;
+                int index = this.grid.indexOf(targetSlots.get(i).index);
+                if (index < 0) return false;
+                candidate.set(index, choices.get(i));
+            }
+            return raw.matches(CraftingInput.of(gridSize, gridSize, candidate), mc.level);
+        };
+        if (!assign(recipe.getInputs(), 0, budget, selected, new int[]{0}, accepts))
+            throw new IllegalArgumentException(CraftingCompatibility.mixedMaterials(raw)
+                    ? "Quark's mixed-material recipe rejects the available combination; supply different wood types or select another chest recipe"
+                    : CraftingCompatibility.constrainedMaterials(raw)
+                    ? "Quark rejects the available material combination; mix material types or select another recipe"
+                    : "Required recipe ingredients are not available without using reserved materials");
         for (int i = 0; i < selected.size(); i++) {
             ItemStack chosen = selected.get(i);
             exact.add(chosen.isEmpty() ? EmiStack.EMPTY : EmiStack.of(chosen).comparison(c -> Comparison.compareComponents()));
@@ -192,17 +226,18 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         }
         return new Operation(Kind.CRAFT, exactRecipe, -1, expected, before, slots(), output.getHoverName().getString(), step.batches(), scope);
     }
-    private boolean assign(List<EmiIngredient> inputs, int index, Map<StackKey, Long> budget, List<ItemStack> result, int[] visits) {
+    private boolean assign(List<EmiIngredient> inputs, int index, Map<StackKey, Long> budget, List<ItemStack> result, int[] visits,
+            java.util.function.Predicate<List<ItemStack>> accepts) {
         if (++visits[0] > 10000) return false;
-        if (index == inputs.size()) return true;
+        if (index == inputs.size()) return accepts.test(result);
         EmiIngredient input = inputs.get(index);
-        if (input.isEmpty()) return assign(inputs, index + 1, budget, result, visits);
+        if (input.isEmpty()) return assign(inputs, index + 1, budget, result, visits, accepts);
         // Vanilla crafting consumes one item per occupied slot; larger EMI quantities are unsupported.
         if (input.getAmount() != 1 || input.getChance() != 1) return false;
         for (StackKey key : new ArrayList<>(budget.keySet())) {
             if (budget.get(key) < 1 || input.getEmiStacks().stream().noneMatch(s -> s.isEqual(EmiStack.of(key.stack())))) continue;
             budget.put(key, budget.get(key) - 1); result.set(index, key.stack());
-            if (assign(inputs, index + 1, budget, result, visits)) return true;
+            if (assign(inputs, index + 1, budget, result, visits, accepts)) return true;
             budget.put(key, budget.get(key) + 1); result.set(index, ItemStack.EMPTY);
         }
         return false;

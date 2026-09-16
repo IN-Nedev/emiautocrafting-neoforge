@@ -2,6 +2,21 @@
 
 ## Release verification
 
+Version **2.0.0-beta.7** was tested with Java 21, Minecraft 1.21.1, NeoForge 21.1.249 and EMI 1.1.24+1.21.1 for NeoForge.
+
+- **43 unit tests passed**, including preservation of the first blocked dependency and use of supplied intermediates.
+- **21 gameplay scenarios passed** across the packaged compatibility and KubeJS runs, with 34 total assertions including startup, UI and item-conservation checks.
+- Quark mixed-wood chests and an exclusion-wrapped glass recipe completed. Invalid single-wood combinations stopped before consuming ingredients.
+- A Factory Manager completed both at a vanilla table and through a Bookwyrm lectern using linked storage. Crafting Station with Sophisticated Storage and AE2 recursive crafting also passed.
+- Tree diagnostics correctly identified a smelting step, accepted supplied stone, respected removal of its global preference, and identified a local tree choice that overrode that removal.
+- Recursive crafting, returned buckets, component-sensitive alternatives, player crafting, cancellation and occupied-grid/cursor checks passed. Plain KubeJS crafting completed; scripted actions and output modifiers were rejected without consuming inputs.
+
+These tests loaded the release JAR in disposable worlds on an integrated server with EMI's `onServer` flag forced false. They exercise client-only transfers, but do not establish dedicated-server-without-EMI compatibility or cover every mod combination. The blocked-recipe screen was also visually checked for wrapping and accessible controls.
+
+Release SHA-256: `a891535dbb651f700286c2f5e95c32b8660b18d5cfde9824b4061e9fd18fec8b`.
+
+## Previous release: beta 6
+
 Version **2.0.0-beta.6** was tested with Java 21, Minecraft 1.21.1, NeoForge 21.1.249 and EMI 1.1.24+1.21.1 for NeoForge.
 
 - **42 unit tests passed**, covering planning, quantities, controls, scheduling, capped storage and operation-scoped stock checks.
@@ -49,5 +64,15 @@ To test storage integrations, supply a directory containing the compatible mods 
 ```
 
 Use `-PtestFilter=name1,name2` to select scenarios, `-PstationOnly` to load only Crafting Station and Sophisticated Storage, or `-PstaleStorageUpdate` to reproduce delayed client inventory updates. Read `runtime-tests-<mode>.txt` in the run directory; a successful process exit alone does not establish a gameplay pass.
+
+For Quark recipe tests, supply Quark, Zeta and Super Factory Manager with `-PquarkModsDirectory`. Combine it with the storage profile to exercise the same recipe through a lectern:
+
+```sh
+./gradlew -Pintegration -PpackagedTest -PclientFillOnly \
+  -PquarkModsDirectory=/path/to/integration-mods \
+  -PstorageModsDirectory=/path/to/integration-mods \
+  -PtestFilter=quark_mixed_chests,quark_same_wood,quark_factory_manager,quark_exclusion_glass,storage_lectern_quark_manager \
+  build runClient
+```
 
 For dedicated-server tests, run a local fixture server with `-PserverOnly`, optionally `-PserverWithoutEmi`, and a separate directory selected by `-PserverDir`. Connect the integration client using `-PtestMode=dedicated-emi` or `dedicated-no-emi`. The harness expects a local offline server, the fixture datapack, and operator access for `AutocraftTest`. `scripts/latency-proxy.py` adds 300 ms each way between local ports 25566 and 25565.

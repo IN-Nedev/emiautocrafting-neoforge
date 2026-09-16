@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-beta.7
+
+- Name blocked recipes and their dependency paths in a readable detail screen, with links to the recipe and tree and copyable diagnostics.
+- Show whether a blocked recipe came from a tree choice, an EMI heart, or a default; explain how those choices differ from sidebar favourites.
+- Support Quark mixed-material recipes and verified exclusion wrappers. Show the real material alternatives and check Quark's matching rules before transferring ingredients.
+- Refresh the tree from current preferences when starting a batch while preserving explicit choices within that tree.
+
 ## 2.0.0-beta.6
 
 - Fix output-pickup stalls when an unrelated stored item changes metadata, arrives or leaves.

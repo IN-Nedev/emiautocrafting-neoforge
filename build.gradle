@@ -111,6 +111,19 @@ if (project.hasProperty('storageModsDirectory')) {
     }
 }
 
+// Optional Quark/SFM fixtures use installed mods without loading a complete modpack.
+if (project.hasProperty('quarkModsDirectory')) {
+    if (!project.hasProperty('integration')) throw new GradleException('quarkModsDirectory requires -Pintegration')
+    dependencies {
+        runtimeOnly fileTree(dir: project.property('quarkModsDirectory'), includes: ['Quark-*.jar', 'Zeta-*.jar', 'Super Factory Manager*.jar'])
+    }
+    neoForge.runs.client {
+        gameDirectory = file('run-quark')
+        jvmArguments.add '-Xmx2048m'
+        systemProperty 'emiautocrafting.quarkCompatibility', 'true'
+    }
+}
+
 // Verify the distributable itself, with production classes absent from the development mod paths.
 if (project.hasProperty('packagedTest')) {
     if (!project.hasProperty('integration')) throw new GradleException('packagedTest requires -Pintegration')
