@@ -2,6 +2,7 @@
 package com.example.emiautocrafting.client;
 
 import com.example.emiautocrafting.emi.StackKey;
+import com.example.emiautocrafting.core.CraftBatches;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.VanillaEmiRecipeCategories;
 import dev.emi.emi.api.recipe.handler.*;
@@ -70,6 +71,23 @@ final class StorageCrafting {
         return kind == Kind.LECTERN || menu.stillValid(Minecraft.getInstance().player);
     }
 
+    boolean canFillWithoutClearing(List<ItemStack> recipeGrid) {
+        if (kind != Kind.AE2) return false;
+        Map<StackKey, Long> supply = remoteStock();
+        playerStock().forEach((key, count) -> supply.merge(key, count, Math::addExact));
+        // Native fill can take from player/network storage, but cannot redistribute an
+        // oversized ingredient stack already sitting in another crafting slot.
+        for (int i = 0; i < recipeGrid.size(); i++) {
+            ItemStack wanted = recipeGrid.get(i);
+            if (wanted.isEmpty() || !menu.getSlot(grid.get(i)).getItem().isEmpty()) continue;
+            StackKey key = new StackKey(wanted);
+            long left = supply.getOrDefault(key, 0L);
+            if (left == 0) return false;
+            supply.put(key, left - 1);
+        }
+        return true;
+    }
+
     String label() {
         return switch (kind) { case STATION -> "Crafting Station inventories"; case LECTERN -> "Bookwyrm lectern storage"; case AE2 -> "AE2 stored items"; };
     }
@@ -105,12 +123,15 @@ final class StorageCrafting {
         };
     }
 
-    boolean fill(EmiRecipe recipe, List<ItemStack> items, AbstractContainerScreen<?> screen) {
+    boolean fill(EmiRecipe recipe, List<ItemStack> items, AbstractContainerScreen<?> screen, int batches) {
         if (kind == Kind.STATION) return fillStation(items);
         if (kind == Kind.LECTERN) {
             var ingredients = items.stream().map(s -> s.isEmpty() ? List.<ItemStack>of() : List.of(s.copy())).toList();
             send(construct("com.hollingsworth.arsnouveau.common.network.ClientTransferHandlerPacket", new Class<?>[]{List.class}, ingredients));
         } else {
+            // Place loose intermediate ingredients before native transfer fills the other slots.
+            // Its packet preserves matching stacks, including their counts.
+            if (batches > 1) fillFromPlayer(items, batches);
             NonNullList<ItemStack> templates = NonNullList.withSize(9, ItemStack.EMPTY);
             for (int i = 0; i < 9; i++) templates.set(i, items.get(i).copy());
             // Explicit templates and craftMissing=false: never submit a network autocrafting job.
@@ -194,17 +215,85 @@ final class StorageCrafting {
 
     int batchLimit(Map<StackKey, Long> used, Map<StackKey, Long> available, List<ItemStack> recipeGrid, ItemStack output, long requested) {
         if (kind == Kind.STATION) return 1;
-        // AE2 replenishes from the network/grid, not the player's loose ingredients.
-        Map<StackKey, Long> pooled = remoteStock();
-        if (kind == Kind.LECTERN)
-            for (int index : inventory) add(pooled, menu.getSlot(index).getItem(), menu.getSlot(index).getItem().getCount());
+        Map<StackKey, Long> remote = remoteStock(), player = playerStock(), pooled = new LinkedHashMap<>(remote);
+        player.forEach((key, count) -> pooled.merge(key, count, Math::addExact));
         Map<StackKey, Integer> smallest = new LinkedHashMap<>();
+        List<CraftBatches.GridSlot<StackKey>> slots = new ArrayList<>();
         for (int i = 0; i < recipeGrid.size(); i++) {
             ItemStack wanted = recipeGrid.get(i), actual = menu.getSlot(grid.get(i)).getItem();
-            if (!wanted.isEmpty()) smallest.merge(new StackKey(wanted),
-                    ItemStack.isSameItemSameComponents(wanted, actual) ? actual.getCount() : 0, Math::min);
+            if (!wanted.isEmpty()) {
+                int count = ItemStack.isSameItemSameComponents(wanted, actual) ? actual.getCount() : 0;
+                smallest.merge(new StackKey(wanted), count, Math::min);
+                slots.add(new CraftBatches.GridSlot<>(new StackKey(wanted), count, menu.getSlot(grid.get(i)).getMaxStackSize(wanted)));
+            }
         }
-        return com.example.emiautocrafting.core.CraftBatches.limit(requested, output.getCount(), output.getMaxStackSize(), used, available, pooled, smallest);
+        // For AE2, the placement plan below accounts for individual grid slots. A pooled
+        // upper bound avoids losing a whole batch when a partly filled slot can be topped up.
+        int limit = kind == Kind.AE2
+                ? CraftBatches.limit(requested, output.getCount(), output.getMaxStackSize(), used, available, available, Map.of())
+                : CraftBatches.limit(requested, output.getCount(), output.getMaxStackSize(), used, available, pooled, smallest);
+        return kind == Kind.AE2 ? CraftBatches.withPlayerFill(limit, used, remote, player, slots) : limit;
+    }
+
+    boolean readyForBatch(List<ItemStack> recipeGrid, int batches) {
+        if (kind != Kind.AE2 || batches == 1) return true;
+        Map<StackKey, Long> used = ingredients(recipeGrid), remote = remoteStock();
+        for (int i = 0; i < recipeGrid.size(); i++) {
+            ItemStack wanted = recipeGrid.get(i), actual = menu.getSlot(grid.get(i)).getItem();
+            if (wanted.isEmpty()) continue;
+            StackKey key = new StackKey(wanted);
+            int required = CraftBatches.gridMinimum(batches, remote.getOrDefault(key, 0L), used.get(key));
+            if (!ItemStack.isSameItemSameComponents(wanted, actual) || actual.getCount() < Math.max(1, required)) return false;
+        }
+        return true;
+    }
+
+    private Map<StackKey, Long> playerStock() {
+        Map<StackKey, Long> stock = new LinkedHashMap<>();
+        for (int index : inventory) add(stock, menu.getSlot(index).getItem(), menu.getSlot(index).getItem().getCount());
+        return stock;
+    }
+
+    private static Map<StackKey, Long> ingredients(List<ItemStack> recipeGrid) {
+        Map<StackKey, Long> used = new LinkedHashMap<>();
+        for (ItemStack stack : recipeGrid) if (!stack.isEmpty()) used.merge(new StackKey(stack), 1L, Math::addExact);
+        return used;
+    }
+
+    private record Placement(int source, int target, int amount, int sourceCount, int targetSpace) {}
+
+    private void fillFromPlayer(List<ItemStack> recipeGrid, int batches) {
+        Map<StackKey, Long> used = ingredients(recipeGrid), remote = remoteStock();
+        List<ItemStack> simulated = new ArrayList<>(menu.slots.stream().map(slot -> slot.getItem().copy()).toList());
+        List<Placement> placements = new ArrayList<>();
+        for (int i = 0; i < recipeGrid.size(); i++) {
+            ItemStack wanted = recipeGrid.get(i);
+            if (wanted.isEmpty()) continue;
+            StackKey key = new StackKey(wanted);
+            int target = grid.get(i), capacity = menu.getSlot(target).getMaxStackSize(wanted);
+            ItemStack actual = simulated.get(target);
+            if (!actual.isEmpty() && !ItemStack.isSameItemSameComponents(wanted, actual)) throw new IllegalArgumentException("Crafting grid changed before filling");
+            int minimum = CraftBatches.gridMinimum(batches, remote.getOrDefault(key, 0L), used.get(key));
+            if (minimum > capacity || !menu.getSlot(target).mayPlace(wanted)) throw new IllegalArgumentException("Crafting grid cannot hold this batch");
+            int count = actual.getCount();
+            for (int source : inventory) {
+                if (count >= minimum) break;
+                ItemStack stack = simulated.get(source);
+                if (!ItemStack.isSameItemSameComponents(wanted, stack)) continue;
+                if (!menu.getSlot(source).mayPickup(Minecraft.getInstance().player) || !menu.getSlot(source).mayPlace(stack)) continue;
+                int moved = Math.min(minimum - count, stack.getCount());
+                placements.add(new Placement(source, target, moved, stack.getCount(), capacity - count));
+                stack.shrink(moved); count += moved;
+            }
+            if (count < minimum) throw new IllegalArgumentException("Player ingredients changed before filling the batch");
+        }
+        // All destinations and returns are planned before the first click; no outside clicks.
+        for (var move : placements) {
+            click(move.source());
+            if (move.amount() == move.sourceCount() || move.amount() == move.targetSpace()) click(move.target());
+            else for (int i = 0; i < move.amount(); i++) click(move.target(), 1);
+            if (move.amount() < move.sourceCount()) click(move.source());
+        }
     }
 
     void craft(int destination, int batches) {

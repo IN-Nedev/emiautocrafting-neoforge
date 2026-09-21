@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-beta.10
+
+- Batch AE2 recipes that use intermediate ingredients in the player inventory by loading enough material into each crafting slot before collecting output.
+- Keep matching AE2 grid ingredients while filling missing slots, avoiding a separate clear operation for the same recipe.
+- Bound player-to-grid transfers by ingredient stack limits, available materials and the requested output. Verify the completed transfer before crafting.
+
 ## 2.0.0-beta.9
 
 - Collect lectern and AE2 crafts in bounded batches of up to one output stack per server confirmation, respecting outstanding quantities and reserved ingredients.

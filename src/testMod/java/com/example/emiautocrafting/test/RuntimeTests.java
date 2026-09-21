@@ -108,6 +108,14 @@ public class RuntimeTests {
     }
     static {
         if (Boolean.getBoolean("emiautocrafting.storageCompatibility")) {
+            for (String supply : List.of("only", "mixed", "partial"))
+                CASES.add(new Scenario("storage_ae2_grid_player_"+supply, "chest", Items.CHEST, 20, 20, null, List.of(), false));
+            CASES.add(new Scenario("storage_ae2_grid_player_smallstacks", "snow_block", Items.SNOW_BLOCK, 20, 20, null, List.of(), false));
+            for (String menu : List.of("ae2", "lectern"))
+                {
+                    CASES.add(new Scenario("storage_"+menu+"_cells200", "ae2:network/cells/item_storage_cell_1k", null, 200, 0, "space", List.of(), false));
+                    CASES.add(new Scenario("storage_"+menu+"_housings200", "ae2:network/cells/item_cell_housing", null, 200, 200, null, List.of(), false));
+                }
             CASES.add(new Scenario("speed_planks", "oak_planks", Items.OAK_PLANKS, 128, 128, null, List.of("give @s oak_log 32"), false));
             CASES.add(new Scenario("storage_station_sophisticated_chain", "wooden_pickaxe", Items.WOODEN_PICKAXE, 1, 1, null, List.of(), false));
             CASES.add(new Scenario("storage_station_sophisticated_oversized", "oak_planks", Items.OAK_PLANKS, 4, 4, null, List.of(), false));
@@ -149,6 +157,7 @@ public class RuntimeTests {
     private boolean reportedPath, testedControls, testedGroup, disconnecting, reloadSent;
     private boolean staleStorageInjected;
     private boolean seededGrid;
+    private long craftStarted;
     private java.util.concurrent.CompletableFuture<?> fixture;
     public RuntimeTests(net.neoforged.bus.api.IEventBus bus){
         if(Boolean.getBoolean("emiautocrafting.integration"))NeoForge.EVENT_BUS.addListener(this::tick);
@@ -189,7 +198,7 @@ public class RuntimeTests {
     private void tick(ClientTickEvent.Post e){
         if (stage == 99) return; // MC.stop() can take several ticks; report completion only once.
         ticks++;
-        if(MC.options!=null) { MC.options.pauseOnLostFocus=false; if(ticks==1) { MC.options.enableVsync().set(false); MC.options.framerateLimit().set(30); MC.options.renderDistance().set(2); MC.options.simulationDistance().set(5); } }
+        if(MC.options!=null) { MC.options.pauseOnLostFocus=false; if(ticks==1) { MC.options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MASTER).set(0.0); MC.options.enableVsync().set(false); MC.options.framerateLimit().set(30); MC.options.renderDistance().set(2); MC.options.simulationDistance().set(5); } }
         if (ticks % 200 == 0) {
             System.out.println("[AUTOCRAFT HARNESS] stage="+stage+" screen="+(MC.screen==null?"none":MC.screen.getClass().getSimpleName()));
             if (launched) screenshot("progress");
@@ -260,8 +269,7 @@ public class RuntimeTests {
                     &&(net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(MC.level.getBlockState(TABLE).getBlock()).toString().equals(menuBlock(c)) || c.name().contains("ae2_") && fixture==null)){
                 if (c.name().startsWith("storage_")) {
                     if (fixture == null) {
-                        var id = MC.player.getUUID();
-                        fixture = MC.getSingleplayerServer().submit(() -> StorageFixtures.setup(MC.getSingleplayerServer().getPlayerList().getPlayer(id), c.name()));
+                        fixture = fixtureAction("setup", c.name());
                         at=ticks; return;
                     }
                     fixture.join();
@@ -269,15 +277,14 @@ public class RuntimeTests {
                 }
                 if(c.inventory())MC.setScreen(new InventoryScreen(MC.player));
                 else if(c.name().startsWith("storage_ae2")) {
-                    var id=MC.player.getUUID(); MC.getSingleplayerServer().execute(() -> StorageFixtures.open(MC.getSingleplayerServer().getPlayerList().getPlayer(id)));
+                    fixtureAction("open", c.name()).join();
                 }
                 else MC.gameMode.useItemOn(MC.player,InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(TABLE),Direction.UP,TABLE,false));
                 stage=2;at=ticks;
             }else if(stage==2&&ticks-at>20&&EmiBridge.screen()!=null){
                 if (c.name().contains("_grid_") && c.name().startsWith("storage_") && !seededGrid) {
                     seededGrid=true;
-                    var id=MC.player.getUUID();
-                    MC.getSingleplayerServer().submit(() -> StorageFixtures.seedGrid(MC.getSingleplayerServer().getPlayerList().getPlayer(id), c.name())).join();
+                    fixtureAction("grid", c.name()).join();
                     at=ticks; return;
                 }
                 EmiRecipe recipe=EmiApi.getRecipeManager().getRecipe(ResourceLocation.parse(c.recipe().contains(":")?c.recipe():"minecraft:"+c.recipe()));
@@ -288,6 +295,7 @@ public class RuntimeTests {
                 var preferredIds = new ArrayList<>(List.of("minecraft:oak_planks","minecraft:stick"));
                 if (c.name().startsWith("tree_")) preferredIds.add("minecraft:stone");
                 if (c.name().contains("quark_")) preferredIds.add("quark:building/crafting/chests/mixed_chest_wood");
+                if ((c.name().endsWith("cells200") || c.name().endsWith("housings200"))) preferredIds.addAll(List.of("ae2:network/cells/item_storage_components_cell_1k_part", "ae2:decorative/quartz_glass"));
                 for(String id:preferredIds){
                     var preferred=EmiApi.getRecipeManager().getRecipe(ResourceLocation.parse(id));if(preferred!=null)BoM.addRecipe(preferred);
                 }
@@ -321,7 +329,7 @@ public class RuntimeTests {
                 NeoForge.EVENT_BUS.post(new net.neoforged.neoforge.client.event.ScreenEvent.KeyReleased.Pre(MC.screen,startKey,0,startMods));
                 if(!keyEvent.isCanceled()||EmiAutocrafting.state()!=JobController.State.PLANNING)
                     throw new IllegalStateException("Start shortcut did not start "+c.name()+": "+EmiAutocrafting.status());
-                stage=3;at=ticks;
+                stage=3;at=ticks;craftStarted=System.nanoTime();
             }else if(stage==2&&ticks-at>100&&EmiBridge.screen()==null){
                 stage=1;at=ticks-51;
             }else if(stage==3){
@@ -365,10 +373,10 @@ public class RuntimeTests {
                         if (!c.name().contains("station")) {
                             if (c.name().endsWith("batch") || c.name().endsWith("three_cakes")) pass &= dispatches==3;
                             if (c.name().endsWith("exact20") || c.name().endsWith("existing_total") || c.name().endsWith("single_step") || c.name().endsWith("grid_reuse") || c.name().endsWith("grid_clear")) pass &= dispatches==1;
-                            report("METRIC "+c.name()+" craftConfirmations="+dispatches);
+                            if (c.name().contains("grid_player_")) pass &= dispatches==(c.name().endsWith("smallstacks")?2:1);
+                            report("METRIC "+c.name()+" craftConfirmations="+dispatches+" seconds="+String.format(Locale.ROOT,"%.3f",(System.nanoTime()-craftStarted)/1e9));
                         }
-                        var id=MC.player.getUUID();
-                        String conservation=MC.getSingleplayerServer().submit(() -> StorageFixtures.check(MC.getSingleplayerServer().getPlayerList().getPlayer(id), c.name())).join();
+                        String conservation=fixtureAction("check", c.name()).join();
                         report(conservation);
                         pass &= conservation.startsWith("PASS");
                         if(c.name().endsWith("missing")) pass &= MC.screen instanceof com.example.emiautocrafting.client.MissingItemsScreen;
@@ -401,7 +409,7 @@ public class RuntimeTests {
                     }
                     report((pass?"PASS ":"FAIL ")+c.name()+" state="+state+" count="+count+" ticks="+(ticks-at)+" status="+EmiAutocrafting.status());
                     stage=4;at=ticks; // Let the final/shortage screen render before capturing it.
-                }else if(ticks-at>1800)throw new IllegalStateException("Test timeout: "+c.name()+" "+state+" "+EmiAutocrafting.status());
+                }else if(ticks-at>((c.name().endsWith("cells200") || c.name().endsWith("housings200"))?12000:1800))throw new IllegalStateException("Test timeout: "+c.name()+" "+state+" "+EmiAutocrafting.status());
             }else if(stage==4 && ticks-at>=4) {
                 screenshot(c.name());test++;stage=0;at=ticks;
             }
@@ -480,6 +488,12 @@ public class RuntimeTests {
             var player=server.getPlayerList().getPlayer(id);
             server.getCommands().performPrefixedCommand(player.createCommandSourceStack().withPermission(4),text);
         });
+    }
+    private java.util.concurrent.CompletableFuture<String> fixtureAction(String action, String scenario) {
+        var server=MC.getSingleplayerServer(); var id=MC.player.getUUID();
+        if (server != null) return server.submit(() -> DedicatedFixtures.perform(server.getPlayerList().getPlayer(id), action, scenario));
+        if (!mode.startsWith("dedicated")) throw new IllegalStateException("Fixture server is unavailable");
+        return DedicatedFixtures.request(id, action, scenario);
     }
     private String menuBlock(Scenario c) {
         if (c.name().contains("station_")) return "craftingstation:crafting_station";

@@ -29,10 +29,12 @@ Stack upgrades are supported during repeated crafting, including when a source d
 
 - Start with an empty cursor. Vanilla grids must also be empty. Supported storage grids can reuse matching ingredients or return the whole grid to the player inventory, provided there is room. Storage crafting requires an empty player inventory slot for collecting output.
 - Space is reserved for outputs and returned containers before inputs are consumed. A nearly full inventory can be refused even if the craft would free a slot.
+- Outputs remain in the player inventory. Complete AE2 storage cells do not stack; a 200-cell request will stop when inventory space runs out. Automatic output deposit is not supported.
 - Concurrent changes to the ingredients, output or returned items can stop confirmation. Changes to unrelated stored items do not block the current operation.
 - Quark initializes compass components after crafting. A crafted compass whose components change this way can time out after its output is retained; it is not automatically retried. This behaviour is also reproducible in beta 8.
 - Machines, arbitrary custom benches, dynamic/chance-based recipe classes and AE2 CPU crafting are not supported.
 - Lectern and AE2 recipes without remainders can execute up to 64 crafts, bounded by one output stack, the remaining request, ingredient reservations and native refill supply, per confirmed operation. Uneven grid stacks reduce the batch limit. Recipes with returned containers or tools, single-step mode, and Crafting Station output pickup use one execution at a time.
+- AE2 batches can use loose player ingredients: the addon fills the needed grid quantities before crafting. Ingredient stack limits still apply. Matching AE2 ingredients stay in place while missing slots are filled.
 - One tree runs at a time, with at most one operation dispatched per client tick. Jobs stop after 100,000 confirmed craft operations or if quantity arithmetic exceeds its limits. Cancellation stops later operations; a batch already sent to the server can finish.
 - Servers must preserve normal Minecraft 1.21.1 menu synchronization. On a timeout, reopen the interface before restarting.
 

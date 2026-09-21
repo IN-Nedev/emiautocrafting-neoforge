@@ -15,6 +15,20 @@ import java.lang.reflect.*;
 /** Test-world-only fixtures using real chests, Bookwyrm links and a finite AE2 storage cell. */
 final class StorageFixtures {
     private static final BlockPos TABLE = new BlockPos(1, 100, 0), CHEST = TABLE.east(), SECOND_CHEST = TABLE.north();
+    private static final BlockPos THIRD_CHEST = TABLE.south();
+    private static java.util.List<ItemStack> cellMaterials(String scenario) {
+        var seed = new java.util.ArrayList<ItemStack>();
+        var materials = scenario.endsWith("housings200") ? java.util.Map.of("minecraft:redstone", 600, "minecraft:iron_ingot", 400, "minecraft:copper_ingot", 200, "ae2:certus_quartz_dust", 500, "minecraft:glass", 400) : java.util.Map.of("minecraft:redstone", 1400, "ae2:certus_quartz_crystal", 800,
+                "ae2:logic_processor", 200, "minecraft:iron_ingot", 400, "minecraft:copper_ingot", 200,
+                "ae2:certus_quartz_dust", 500, "minecraft:glass", 400);
+        materials.forEach((name, count) -> {
+            for (int left=count; left>0; left-=64) seed.add(new ItemStack(item(name), Math.min(64,left)));
+        });
+        return seed;
+    }
+    private static java.util.List<BlockPos> chests(String scenario) {
+        return (scenario.endsWith("cells200") || scenario.endsWith("housings200")) ? java.util.List.of(CHEST, SECOND_CHEST, THIRD_CHEST) : java.util.List.of(CHEST, SECOND_CHEST);
+    }
     private static final java.util.Set<net.minecraft.world.inventory.AbstractContainerMenu> observedMenus =
             java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
     static void observeBackgroundMetadata(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
@@ -72,6 +86,9 @@ final class StorageFixtures {
             for (int i=0;i<9;i++) seed.add(new ItemStack(Items.MILK_BUCKET));
             seed.add(new ItemStack(Items.WHEAT,9)); seed.add(new ItemStack(Items.SUGAR,6)); seed.add(new ItemStack(Items.EGG,3));
         }
+        if ((scenario.endsWith("cells200") || scenario.endsWith("housings200"))) seed = cellMaterials(scenario);
+        if (scenario.contains("grid_player_")) seed = scenario.endsWith("mixed") || scenario.endsWith("partial")
+                ? java.util.List.of(new ItemStack(Items.OAK_PLANKS,64),new ItemStack(Items.OAK_PLANKS,16)) : java.util.List.of();
         var level = player.serverLevel();
         level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
                 new net.minecraft.world.phys.AABB(TABLE).inflate(10)).forEach(net.minecraft.world.entity.Entity::discard);
@@ -84,7 +101,7 @@ final class StorageFixtures {
             Object host = level.getBlockEntity(TABLE);
             call(host, "addPart", item("ae2:fluix_glass_cable"), null, player);
             call(host, "addPart", item("ae2:crafting_terminal"), Direction.NORTH, player);
-            ItemStack cell = new ItemStack(item("ae2:item_storage_cell_1k"));
+            ItemStack cell = new ItemStack(item((scenario.endsWith("cells200") || scenario.endsWith("housings200")) ? "ae2:item_storage_cell_16k" : "ae2:item_storage_cell_1k"));
             Object storage = call(type("appeng.api.storage.StorageCells"), "getCellInventory", cell, null);
             Object mode = field("appeng.api.config.Actionable", "MODULATE");
             Object source = call(type("appeng.api.networking.security.IActionSource"), "empty");
@@ -100,6 +117,7 @@ final class StorageFixtures {
             level.setBlockAndUpdate(CHEST, scenario.contains("sophisticated") ? block(scenario.contains("hidden")
                     ? "sophisticatedstorage:netherite_chest" : "sophisticatedstorage:chest").defaultBlockState() : Blocks.CHEST.defaultBlockState());
             level.setBlockAndUpdate(SECOND_CHEST, Blocks.CHEST.defaultBlockState());
+            if ((scenario.endsWith("cells200") || scenario.endsWith("housings200"))) level.setBlockAndUpdate(THIRD_CHEST, Blocks.CHEST.defaultBlockState());
             if (scenario.contains("sophisticated")) {
                 Object wrapper = call(level.getBlockEntity(CHEST), "getStorageWrapper");
                 if (scenario.endsWith("oversized") || scenario.contains("_cap_")) call(call(wrapper, "getUpgradeHandler"), "setStackInSlot", 0, new ItemStack(item("sophisticatedstorage:stack_upgrade_tier_1")));
@@ -110,13 +128,16 @@ final class StorageFixtures {
                     if (scenario.endsWith("multiple")) call(inventory, "setStackInSlot", 1, new ItemStack(Items.OAK_PLANKS, 70));
                 }
                 if (scenario.contains("background")) call(call(wrapper, "getInventoryHandler"), "setStackInSlot", 1, new ItemStack(Items.COMPASS));
-            } else for (int i = 0; i < seed.size(); i++)
-                ((Container) level.getBlockEntity(i % 2 == 0 ? CHEST : SECOND_CHEST)).setItem(i / 2, seed.get(i));
+            } else for (int i = 0; i < seed.size(); i++) {
+                var chests = chests(scenario);
+                ((Container) level.getBlockEntity(chests.get(i % chests.size()))).setItem(i / chests.size(), seed.get(i));
+            }
             if (scenario.contains("lectern")) {
                 Object lectern = level.getBlockEntity(TABLE);
                 call(lectern, "addBookwyrm");
                 call(lectern, "onFinishedConnectionLast", CHEST, Direction.UP, null, player);
                 call(lectern, "onFinishedConnectionLast", SECOND_CHEST, Direction.UP, null, player);
+                if ((scenario.endsWith("cells200") || scenario.endsWith("housings200"))) call(lectern, "onFinishedConnectionLast", THIRD_CHEST, Direction.UP, null, player);
                 call(lectern, "updateItems");
             }
         }
@@ -133,6 +154,18 @@ final class StorageFixtures {
 
     static void seedGrid(ServerPlayer player, String scenario) {
         if (!player.server.getWorldData().getLevelName().equals("Autocrafting verification")) throw new IllegalStateException("Not a test world");
+        if (scenario.contains("grid_player_")) {
+            Item item = scenario.endsWith("smallstacks") ? Items.SNOWBALL : Items.OAK_PLANKS;
+            int count = scenario.endsWith("only") ? 256 : scenario.endsWith("partial") ? 79 : 80;
+            for (int i=0;count>0;i++) {
+                int stackSize=Math.min(count,new ItemStack(item).getMaxStackSize());
+                player.getInventory().setItem(i,new ItemStack(item,stackSize)); count-=stackSize;
+            }
+            if (scenario.endsWith("partial"))
+                player.containerMenu.slots.stream().filter(slot -> slot.getClass().getName().equals("appeng.menu.slot.CraftingMatrixSlot"))
+                        .findFirst().orElseThrow().set(new ItemStack(Items.OAK_PLANKS));
+            player.containerMenu.broadcastFullState(); return;
+        }
         int filled=0;
         for (var slot : player.containerMenu.slots) {
             boolean grid=scenario.contains("ae2") ? slot.getClass().getName().equals("appeng.menu.slot.CraftingMatrixSlot") : slot.index>0 && slot.index<10;
@@ -148,6 +181,42 @@ final class StorageFixtures {
     }
 
     static String check(ServerPlayer player, String scenario) {
+        if (scenario.contains("grid_player_")) {
+            boolean snow=scenario.endsWith("smallstacks");
+            long output=amount(player,scenario,snow?Items.SNOW_BLOCK:Items.CHEST), left=amount(player,scenario,snow?Items.SNOWBALL:Items.OAK_PLANKS);
+            boolean pass=output==20 && left==(scenario.endsWith("only")?96:0) && player.containerMenu.getCarried().isEmpty();
+            return (pass?"PASS ":"FAIL ")+scenario+" conservation output="+output+" ingredients="+left;
+        }
+        if ((scenario.endsWith("cells200") || scenario.endsWith("housings200"))) {
+            long cells = amount(player, scenario, item("ae2:item_storage_cell_1k"));
+            var remaining = new java.util.LinkedHashMap<String,Long>();
+            for (var stack : cellMaterials(scenario)) {
+                long count=amount(player,scenario,stack.getItem());
+                if(count>0) remaining.put(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString(),count);
+            }
+            for (String name : java.util.List.of("ae2:cell_component_1k", "ae2:quartz_glass")) {
+                long count=amount(player,scenario,item(name)); if(count>0) remaining.put(name,count);
+            }
+            boolean noDrops=player.serverLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                    new net.minecraft.world.phys.AABB(TABLE).inflate(10)).isEmpty();
+            boolean pass;
+            if (scenario.endsWith("housings200")) {
+                cells=amount(player,scenario,item("ae2:item_cell_housing"));
+                pass=cells==200 && remaining.isEmpty();
+            } else {
+                long parts=amount(player,scenario,item("ae2:cell_component_1k")), glass=amount(player,scenario,item("ae2:quartz_glass"));
+                pass=cells>0 && cells<200
+                        && amount(player,scenario,item("ae2:logic_processor"))+parts+cells==200
+                        && amount(player,scenario,item("ae2:certus_quartz_crystal"))+4*parts+4*cells==800
+                        && amount(player,scenario,Items.REDSTONE)+4*parts+7*cells==1400
+                        && amount(player,scenario,Items.IRON_INGOT)+2*cells==400
+                        && amount(player,scenario,Items.COPPER_INGOT)+cells==200
+                        && 4*amount(player,scenario,item("ae2:certus_quartz_dust"))+5*glass+10*cells==2000
+                        && amount(player,scenario,Items.GLASS)+glass+2*cells==400;
+            }
+            pass &= noDrops && player.containerMenu.getCarried().isEmpty();
+            return (pass?"PASS ":"FAIL ")+scenario+" conservation output="+cells+" remaining="+remaining+" noDrops="+noDrops;
+        }
         if (scenario.endsWith("uneven")) {
             long chests=amount(player,scenario,Items.CHEST), planks=amount(player,scenario,Items.OAK_PLANKS);
             return (chests==5 && planks==3 ? "PASS " : "FAIL ")+scenario+" conservation chests="+chests+" planks="+planks;
@@ -215,7 +284,7 @@ final class StorageFixtures {
             Object key = call(type("appeng.api.stacks.AEItemKey"), "of", new ItemStack(item));
             result += (long) call(stacks, "get", key);
         } else {
-            for (BlockPos pos : java.util.List.of(CHEST, SECOND_CHEST)) {
+            for (BlockPos pos : chests(scenario)) {
                 if (pos.equals(CHEST) && scenario.contains("sophisticated")) {
                     Object inventory = call(call(player.serverLevel().getBlockEntity(pos), "getStorageWrapper"), "getInventoryHandler");
                     for (int i = 0; i < (int) call(inventory, "getSlots"); i++) {

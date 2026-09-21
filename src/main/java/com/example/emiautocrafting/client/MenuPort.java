@@ -91,6 +91,8 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         if (prepared != null) {
             if (!prepared.scope().matches(prepared.before(), stock) || !matchesPreparedGrid() || !ItemStack.matches(menu.getSlot(outputSlot).getItem(), prepared.recipe().getOutputs().getFirst().getItemStack()))
                 return JobController.Decision.blocked("Storage or transferred ingredients changed; reopen the menu before retrying");
+            if (!storage.readyForBatch(preparedGrid, Math.toIntExact(prepared.outstandingBatches())))
+                return JobController.Decision.blocked("Transferred ingredients no longer cover the batch; reopen the menu before retrying");
             ItemStack result = prepared.recipe().getOutputs().getFirst().getItemStack();
             int destination = storage.outputDestination(result.copyWithCount(Math.toIntExact(result.getCount() * prepared.outstandingBatches())));
             return JobController.Decision.ready(new Operation(Kind.CRAFT, prepared.recipe(), destination, prepared.scope().rebase(prepared.expected(), stock), stock, slots(), prepared.label(), prepared.outstandingBatches(), prepared.scope()));
@@ -224,7 +226,8 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         };
         if (storage != null) {
             preparedGrid = grid.stream().map(ItemStack::copy).toList();
-            if (!matchesPreparedGrid() && this.grid.stream().anyMatch(index -> !menu.getSlot(index).getItem().isEmpty())) {
+            if (!matchesPreparedGrid() && this.grid.stream().anyMatch(index -> !menu.getSlot(index).getItem().isEmpty())
+                    && !(matchesPreparedGrid(true) && storage.canFillWithoutClearing(preparedGrid))) {
                 clearMoves = storage.planGridClear();
                 Set<StackKey> returned = new LinkedHashSet<>();
                 for (var move : clearMoves) returned.add(new StackKey(menu.getSlot(move.source()).getItem()));
@@ -233,7 +236,7 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
             int destination = storage.outputDestination(collected);
             String label = collected.getCount() + " " + output.getHoverName().getString();
             prepared = new Operation(Kind.CRAFT, exactRecipe, -1, expected, before, slots(), label, batches, scope);
-            if (matchesPreparedGrid() && ItemStack.matches(menu.getSlot(outputSlot).getItem(), output))
+            if (matchesPreparedGrid() && storage.readyForBatch(preparedGrid, batches) && ItemStack.matches(menu.getSlot(outputSlot).getItem(), output))
                 return new Operation(Kind.CRAFT, exactRecipe, destination, expected, before, slots(), label, batches, scope);
             return new Operation(Kind.FILL, exactRecipe, -1, before, before, slots(), "Checking transferred ingredients", batches, scope);
         }
@@ -268,7 +271,7 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         if (storage != null && operation.kind() != Kind.SYNC && !operation.scope().matches(operation.before(), stock()))
             throw new IllegalArgumentException("Connected inventory changed before the transfer; start again");
         if (operation.kind() == Kind.FILL) {
-            if (!storage.fill(operation.recipe(), preparedGrid, screen)) throw new IllegalArgumentException("Storage recipe transfer was rejected");
+            if (!storage.fill(operation.recipe(), preparedGrid, screen, Math.toIntExact(operation.outstandingBatches()))) throw new IllegalArgumentException("Storage recipe transfer was rejected");
         } else if (operation.kind() == Kind.CRAFT && storage != null) {
             if (!matchesPreparedGrid() || !ItemStack.matches(menu.getSlot(outputSlot).getItem(), operation.recipe().getOutputs().getFirst().getItemStack())
                     || !menu.getSlot(operation.clearSlot()).getItem().isEmpty()) throw new IllegalArgumentException("The crafting grid or output destination changed");
@@ -309,6 +312,8 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
                     + "): server " + stackSummary(confirmed.slots().get(i)) + ", displayed " + stackSummary(menu.getSlot(i).getItem()));
         if (operation.kind() == Kind.SYNC) { initialized = true; return JobController.Confirmation.CONFIRMED; }
         var actual = stock(confirmed);
+        if (operation.kind() == Kind.FILL && !storage.readyForBatch(preparedGrid, Math.toIntExact(operation.outstandingBatches())))
+            return pending("Waiting for enough transferred ingredients for the batch");
         if (operation.kind() == Kind.FILL && matchesPreparedGrid()
                 && ItemStack.matches(menu.getSlot(outputSlot).getItem(), operation.recipe().getOutputs().getFirst().getItemStack())) {
             var scope = operation.scope();
@@ -350,9 +355,13 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
     public String waitingMessage() { return waitReason.isEmpty() ? "Waiting for server" : waitReason; }
     public boolean countsAsCraft(Operation operation) { return operation.kind() == Kind.CRAFT; }
     private boolean matchesPreparedGrid() {
+        return matchesPreparedGrid(false);
+    }
+    private boolean matchesPreparedGrid(boolean allowMissing) {
         if (preparedGrid == null) return false;
         for (int i = 0; i < grid.size(); i++) {
             ItemStack actual = menu.getSlot(grid.get(i)).getItem(), expected = preparedGrid.get(i);
+            if (allowMissing && actual.isEmpty()) continue;
             if (expected.isEmpty() ? !actual.isEmpty() : !ItemStack.isSameItemSameComponents(actual, expected)
                     || actual.getCount() < expected.getCount()) return false;
         }
