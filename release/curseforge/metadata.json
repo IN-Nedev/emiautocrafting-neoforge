@@ -1,12 +1,12 @@
 {
   "name": "EMI Autocrafting - NeoForge",
   "projectId": 1697067,
-  "fileId": 8895924,
-  "authorFileUrl": "https://authors.curseforge.com/#/projects/1697067/files/8895924",
+  "fileId": 8942666,
+  "authorFileUrl": "https://authors.curseforge.com/#/projects/1697067/files/8942666",
   "publishAfterApproval": true,
   "summary": "Craft EMI recipe trees in batches, count connected storage, and see missing materials. Supports Crafting Station, Bookwyrm lecterns and AE2 crafting terminals.",
   "releaseType": "beta",
-  "version": "2.0.0-beta.8",
+  "version": "2.0.0-beta.9",
   "minecraft": "1.21.1",
   "loader": "NeoForge",
   "java": "21",
@@ -16,6 +16,6 @@
   "requiredDependencies": {
     "emi": "1.1.24+1.21.1+neoforge"
   },
-  "artifact": "emiautocrafting-neoforge-1.21.1-2.0.0-beta.8.jar",
-  "sha256": "6a383cf1d87c8bdf890e11e276f754ea3c1422b8ea45f670b8033e93275797cd"
+  "artifact": "emiautocrafting-neoforge-1.21.1-2.0.0-beta.9.jar",
+  "sha256": "f5d7a3f41a23b9444e6e293a995fbb719169c6ca3adcf8f2991c2870880ca26a"
 }
