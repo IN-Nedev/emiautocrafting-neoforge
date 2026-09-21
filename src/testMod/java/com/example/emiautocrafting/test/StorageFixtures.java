@@ -59,6 +59,19 @@ final class StorageFixtures {
                 : java.util.List.of(new ItemStack(Items.OAK_LOG, logs - logs / 2), new ItemStack(Items.OAK_LOG, logs / 2));
         if (scenario.endsWith("quark_manager")) seed = java.util.List.of(new ItemStack(Items.OAK_LOG, 7),
                 new ItemStack(Items.BIRCH_LOG), new ItemStack(item("sfm:cable"), 4), new ItemStack(Items.REPEATER));
+        if (scenario.endsWith("exact20") || scenario.endsWith("single_step") || scenario.endsWith("existing_total"))
+            seed = java.util.List.of(new ItemStack(Items.OAK_PLANKS,64), new ItemStack(Items.OAK_PLANKS,64),
+                    new ItemStack(Items.OAK_PLANKS,64), new ItemStack(Items.OAK_PLANKS,64));
+        if (scenario.endsWith("existing_total")) {
+            seed = new java.util.ArrayList<>(seed); seed.add(new ItemStack(Items.CHEST,7));
+        }
+        if (scenario.contains("_grid_")) seed = java.util.List.of(new ItemStack(Items.OAK_LOG,32));
+        if (scenario.endsWith("uneven")) seed = java.util.List.of(new ItemStack(Items.OAK_PLANKS,16));
+        if (scenario.endsWith("three_cakes")) {
+            seed = new java.util.ArrayList<>();
+            for (int i=0;i<9;i++) seed.add(new ItemStack(Items.MILK_BUCKET));
+            seed.add(new ItemStack(Items.WHEAT,9)); seed.add(new ItemStack(Items.SUGAR,6)); seed.add(new ItemStack(Items.EGG,3));
+        }
         var level = player.serverLevel();
         level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
                 new net.minecraft.world.phys.AABB(TABLE).inflate(10)).forEach(net.minecraft.world.entity.Entity::discard);
@@ -118,7 +131,40 @@ final class StorageFixtures {
             throw new IllegalStateException("AE2 terminal did not open");
     }
 
+    static void seedGrid(ServerPlayer player, String scenario) {
+        if (!player.server.getWorldData().getLevelName().equals("Autocrafting verification")) throw new IllegalStateException("Not a test world");
+        int filled=0;
+        for (var slot : player.containerMenu.slots) {
+            boolean grid=scenario.contains("ae2") ? slot.getClass().getName().equals("appeng.menu.slot.CraftingMatrixSlot") : slot.index>0 && slot.index<10;
+            if (grid) {
+                if (scenario.endsWith("uneven")) slot.set(filled==4 ? ItemStack.EMPTY : new ItemStack(Items.OAK_PLANKS, filled==0 ? 20 : 1));
+                else if (!scenario.endsWith("reuse")) slot.set(new ItemStack(Items.COBBLESTONE,32));
+                else if (filled==0) slot.set(new ItemStack(Items.OAK_LOG,20));
+                filled++;
+            }
+        }
+        if (scenario.endsWith("full")) for (int i=0;i<35;i++) player.getInventory().setItem(i,new ItemStack(Items.STONE,64));
+        player.containerMenu.broadcastFullState();
+    }
+
     static String check(ServerPlayer player, String scenario) {
+        if (scenario.endsWith("uneven")) {
+            long chests=amount(player,scenario,Items.CHEST), planks=amount(player,scenario,Items.OAK_PLANKS);
+            return (chests==5 && planks==3 ? "PASS " : "FAIL ")+scenario+" conservation chests="+chests+" planks="+planks;
+        }
+        if (scenario.endsWith("exact20") || scenario.endsWith("single_step") || scenario.endsWith("existing_total")) {
+            long chests=amount(player,scenario,Items.CHEST), planks=amount(player,scenario,Items.OAK_PLANKS);
+            int expected=scenario.endsWith("single_step")?1:20;
+            int made=scenario.endsWith("existing_total")?13:expected;
+            return (chests==expected && planks==256-8*made ? "PASS " : "FAIL ")+scenario+" conservation chests="+chests+" planks="+planks;
+        }
+        if (scenario.contains("_grid_")) {
+            boolean full=scenario.endsWith("full"), reuse=scenario.endsWith("reuse");
+            long logs=amount(player,scenario,Items.OAK_LOG), planks=amount(player,scenario,Items.OAK_PLANKS), cobble=amount(player,scenario,Items.COBBLESTONE);
+            boolean pass=logs==(full?32:reuse?47:27) && planks==(full?0:20) && cobble==(reuse?0:288);
+            if (full) pass &= amount(player,scenario,Items.STONE)==35*64;
+            return (pass?"PASS ":"FAIL ")+scenario+" conservation logs="+logs+" planks="+planks+" cobble="+cobble;
+        }
         if (scenario.contains("_cap_")) {
             long chests = amount(player, scenario, Items.CHEST), planks = amount(player, scenario, Items.OAK_PLANKS);
             int stacks = scenario.endsWith("multiple") ? 2 : 1;
@@ -131,9 +177,10 @@ final class StorageFixtures {
                     .stream().allMatch(item -> amount(player, scenario, item) == 0);
             return (pass ? "PASS " : "FAIL ") + scenario + " conservation managers=" + managers + " ingredients consumed once";
         }
-        if (scenario.endsWith("buckets")) {
+        if (scenario.endsWith("buckets") || scenario.endsWith("three_cakes")) {
             long cake = amount(player, scenario, Items.CAKE), buckets = amount(player, scenario, Items.BUCKET);
-            boolean pass = cake == 1 && buckets == 3 && java.util.List.of(Items.MILK_BUCKET, Items.WHEAT, Items.SUGAR, Items.EGG).stream()
+            int expected=scenario.endsWith("three_cakes")?3:1;
+            boolean pass = cake == expected && buckets == expected*3 && java.util.List.of(Items.MILK_BUCKET, Items.WHEAT, Items.SUGAR, Items.EGG).stream()
                     .allMatch(item -> amount(player, scenario, item) == 0);
             return (pass ? "PASS " : "FAIL ") + scenario + " conservation cake="+cake+" returnedBuckets="+buckets;
         }

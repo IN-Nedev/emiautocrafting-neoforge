@@ -192,7 +192,30 @@ final class StorageCrafting {
         return limits;
     }
 
-    void craftOnce(int destination) {
+    int batchLimit(Map<StackKey, Long> used, Map<StackKey, Long> available, List<ItemStack> recipeGrid, ItemStack output, long requested) {
+        if (kind == Kind.STATION) return 1;
+        // AE2 replenishes from the network/grid, not the player's loose ingredients.
+        Map<StackKey, Long> pooled = remoteStock();
+        if (kind == Kind.LECTERN)
+            for (int index : inventory) add(pooled, menu.getSlot(index).getItem(), menu.getSlot(index).getItem().getCount());
+        Map<StackKey, Integer> smallest = new LinkedHashMap<>();
+        for (int i = 0; i < recipeGrid.size(); i++) {
+            ItemStack wanted = recipeGrid.get(i), actual = menu.getSlot(grid.get(i)).getItem();
+            if (!wanted.isEmpty()) smallest.merge(new StackKey(wanted),
+                    ItemStack.isSameItemSameComponents(wanted, actual) ? actual.getCount() : 0, Math::min);
+        }
+        return com.example.emiautocrafting.core.CraftBatches.limit(requested, output.getCount(), output.getMaxStackSize(), used, available, pooled, smallest);
+    }
+
+    void craft(int destination, int batches) {
+        if (batches < 1 || batches > 64) throw new IllegalArgumentException("Invalid crafting batch");
+        for (int i = 0; i < batches; i++) craftToCursor();
+        // One initially empty buffer holds the bounded result. A rejected craft cannot
+        // pick up somebody else's stack or drop items; partial results remain verifiable.
+        click(destination);
+    }
+
+    private void craftToCursor() {
         if (kind == Kind.AE2) {
             try {
                 Class<?> type = Class.forName("appeng.helpers.InventoryAction");
@@ -201,9 +224,38 @@ final class StorageCrafting {
                         new Class<?>[]{type, int.class, long.class}, action, output, 0L));
             } catch (ReflectiveOperationException error) { throw incompatible(error); }
         } else click(output);
-        // The server processes these in order. Do not predict a cursor stack for native AE2 packets.
-        // An unsuccessful craft followed by clicking an empty destination cannot take or drop items.
-        click(destination);
+    }
+
+    record Move(int source, int destination) {}
+
+    List<Move> planGridClear() {
+        List<ItemStack> simulated = new ArrayList<>(menu.slots.stream().map(slot -> slot.getItem().copy()).toList());
+        List<Move> moves = new ArrayList<>();
+        for (int source : grid) {
+            ItemStack stack = simulated.get(source);
+            if (stack.isEmpty()) continue;
+            int destination = -1;
+            for (int index : inventory) {
+                Slot slot = menu.getSlot(index);
+                ItemStack existing = simulated.get(index);
+                if (slot.mayPlace(stack) && (existing.isEmpty() || ItemStack.isSameItemSameComponents(existing, stack))
+                        && existing.getCount() + stack.getCount() <= slot.getMaxStackSize(stack)) {
+                    if (destination < 0 || !existing.isEmpty()) destination = index;
+                    if (!existing.isEmpty()) break;
+                }
+            }
+            if (destination < 0) throw new IllegalArgumentException("Not enough inventory space to retain the crafting grid");
+            // Each entire source stack has a reserved destination; never use outside clicks.
+            if (simulated.get(destination).isEmpty()) {
+                simulated.set(destination, stack.copy());
+            } else simulated.get(destination).grow(stack.getCount());
+            moves.add(new Move(source, destination));
+        }
+        return List.copyOf(moves);
+    }
+
+    void clearGrid(List<Move> moves) {
+        for (Move move : moves) { click(move.source()); click(move.destination()); }
     }
 
     int mergeDestination(int source) {

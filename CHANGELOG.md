@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-beta.9
+
+- Collect lectern and AE2 crafts in bounded batches of up to one output stack per server confirmation, respecting outstanding quantities and reserved ingredients.
+- Clear leftover storage grids in one verified operation and reuse matching ingredients, including prefilled stacks.
+- Account for native refill supply and uneven grid stacks when sizing batches. Keep returned containers, tools and single-step mode at one execution per confirmation.
+- Retain aggregate server checks and stop partial or uncertain batches without retrying.
+
 ## 2.0.0-beta.8
 
 - Fix Crafting Station batches stopping when extraction brings an upgraded storage stack below the normal displayed stack limit.

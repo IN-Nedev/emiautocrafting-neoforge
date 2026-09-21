@@ -2,6 +2,22 @@
 
 ## Release verification
 
+Version **2.0.0-beta.9** was tested with Java 21, Minecraft 1.21.1, NeoForge 21.1.249 and EMI 1.1.24+1.21.1 for NeoForge.
+
+- **51 unit tests passed**, including exact requested amounts, multi-output stack limits, reserved materials, uneven grid stacks and very large stored quantities.
+- **52 gameplay scenarios passed their expected checks** across storage, controls/tools and isolated Quark profiles, including the documented compass stop case. Existing outputs reduced a twenty-chest request to thirteen new chests in one confirmation.
+- Lectern and AE2 runs each crafted exactly 20 chests in one confirmed craft operation. A 192-plank job used three craft confirmations instead of the previous 48. These are operation counts, not wall-clock speed ratios; latency and server load still affect elapsed time.
+- Nine occupied grid slots were retained in one CLEAR_GRID operation. Matching prefilled grids were reused. Full inventories stopped before moving materials; uneven ingredient stacks completed with the expected leftovers.
+- Three cakes returned all nine buckets, one execution at a time. Single-step mode produced one execution even with enough materials for twenty.
+- Existing Crafting Station/Sophisticated stack-upgrade cases and supported Quark recipes passed. A native station-opening slot-count error occurred once during combined fixture setup, before an addon craft; the affected station case passed in a fresh world.
+- Quark's post-craft compass component changes still cause a verification timeout with the crafted item retained. This was reproduced against the original beta 8 JAR and checked as an expected stop-without-retry case in beta 9. The deterministic component fixture passes without Quark.
+
+Tests load the packaged JAR in disposable integrated-server worlds, with EMI's `onServer` flag forced false. They exercise client-only transfers, but do not establish dedicated-server-without-EMI compatibility or cover every mod combination. The release contains 43 production classes and no test or third-party mod classes.
+
+Release SHA-256: `f5d7a3f41a23b9444e6e293a995fbb719169c6ca3adcf8f2991c2870880ca26a`.
+
+## Previous release: beta 8
+
 Version **2.0.0-beta.8** was tested with Java 21, Minecraft 1.21.1, NeoForge 21.1.249 and EMI 1.1.24+1.21.1 for NeoForge.
 
 - **44 unit tests passed**, including bounded reconciliation when an oversized stack crosses below its displayed limit.

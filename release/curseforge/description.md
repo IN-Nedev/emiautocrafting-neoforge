@@ -12,6 +12,8 @@ This is an independent **Minecraft 1.21.1 NeoForge port and derivative of [diges
 - Inspect a blocked recipe's item, dependency path and selection source with **Why?**, then open its recipe or edit the tree.
 - Keep the active tree in its own collapsible **Craft batch** panel, with progress and Tree/Clear controls.
 - Advance as soon as the previous operation is confirmed, with configurable pacing.
+- Collect ordinary lectern and AE2 crafts in bounded batches of up to one output stack per confirmation, without exceeding the requested number of recipe executions.
+- Reuse matching storage-grid ingredients, or clear all leftover stacks in one verified operation when the recipe changes.
 - Stop a batch with a shortcut or take over with a manual inventory click. Uncertain crafts stop with a reason and are not retried automatically.
 
 ## Requirements and installation
@@ -37,7 +39,7 @@ AE2 support performs immediate crafting from stored items; it does not create pa
 
 ## Getting started
 
-1. Open a supported crafting interface. Start with an empty crafting grid and cursor, and keep one empty player inventory slot when crafting from connected storage.
+1. Open a supported crafting interface with an empty cursor. Vanilla grids must be empty; supported storage interfaces can reuse or clear existing ingredients. Keep one empty player inventory slot for collected output and enough room for cleared ingredients.
 2. Choose preferred intermediate recipes using EMI's hearts, and resolve recipe-tree ingredient alternatives as needed.
 3. Hover a recipe output or a recipe-associated favourite and press **Ctrl+A**. Enter the total number of output items you want and choose **Prepare tree**.
 4. Press **Ctrl+C** to start. Existing items count toward your requested total.
@@ -54,6 +56,8 @@ This release supports ordinary shaped/shapeless crafting recipes, plain KubeJS w
 Choices made inside an existing tree override global recipe hearts. Removing a sidebar favourite only removes its bookmark. Clear and prepare the batch again to reset local tree choices. Supply finished ingredients for furnace and machine steps.
 
 Planning counts storage exposed by the open interface. Crafting Station can cap displayed oversized stacks, so the initial plan may see less than the chest physically contains. Vanilla tables do not gain nearby-inventory scanning. Space checks reserve room for outputs and returned containers before consuming inputs.
+
+Lectern and AE2 batch sizes respect available materials, native refill supply and uneven grid stacks. Recipes with returned containers or tools, single-step mode, and Crafting Station output pickup still use one execution per confirmation. Cancellation stops later operations; a batch already sent to the server can finish.
 
 The beta has automated packaged-JAR coverage for the supported storage integrations. Compatibility with every mod combination or custom server is not guaranteed. Include your mod versions, recipe, interface and displayed status when [reporting a problem](https://github.com/IN-Nedev/emiautocrafting-neoforge/issues).
 

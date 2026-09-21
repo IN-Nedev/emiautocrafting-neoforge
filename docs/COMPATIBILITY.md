@@ -27,11 +27,13 @@ Stack upgrades are supported during repeated crafting, including when a source d
 
 ## Execution limits
 
-- Start with an empty grid and cursor. Storage crafting requires an empty player inventory slot for collecting output.
+- Start with an empty cursor. Vanilla grids must also be empty. Supported storage grids can reuse matching ingredients or return the whole grid to the player inventory, provided there is room. Storage crafting requires an empty player inventory slot for collecting output.
 - Space is reserved for outputs and returned containers before inputs are consumed. A nearly full inventory can be refused even if the craft would free a slot.
 - Concurrent changes to the ingredients, output or returned items can stop confirmation. Changes to unrelated stored items do not block the current operation.
+- Quark initializes compass components after crafting. A crafted compass whose components change this way can time out after its output is retained; it is not automatically retried. This behaviour is also reproducible in beta 8.
 - Machines, arbitrary custom benches, dynamic/chance-based recipe classes and AE2 CPU crafting are not supported.
-- One tree runs at a time, with at most one operation dispatched per client tick. Jobs stop after 100,000 recipe executions or if quantity arithmetic exceeds its limits.
+- Lectern and AE2 recipes without remainders can execute up to 64 crafts, bounded by one output stack, the remaining request, ingredient reservations and native refill supply, per confirmed operation. Uneven grid stacks reduce the batch limit. Recipes with returned containers or tools, single-step mode, and Crafting Station output pickup use one execution at a time.
+- One tree runs at a time, with at most one operation dispatched per client tick. Jobs stop after 100,000 confirmed craft operations or if quantity arithmetic exceeds its limits. Cancellation stops later operations; a batch already sent to the server can finish.
 - Servers must preserve normal Minecraft 1.21.1 menu synchronization. On a timeout, reopen the interface before restarting.
 
 [Testing and reproduction](TEST-REPORT.md) describes the measured coverage. Compatibility is scoped to the listed interfaces and recipe types.

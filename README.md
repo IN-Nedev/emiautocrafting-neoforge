@@ -19,7 +19,7 @@ The addon is not required on the server. It uses EMI's server-assisted filling w
 
 ## Crafting a batch
 
-1. Open a supported crafting interface with an empty grid and cursor. Keep one empty player inventory slot when using connected storage.
+1. Open a supported crafting interface with an empty cursor. Vanilla grids must be empty; supported storage interfaces can reuse or clear existing ingredients. Keep one empty player inventory slot for collected output and enough room for cleared ingredients.
 2. Choose preferred recipes with EMI's hearts and resolve ingredient alternatives in the recipe tree.
 3. Hover a recipe output and press **Ctrl+A**. Enter the total quantity you want, then select **Prepare tree**.
 4. Press **Ctrl+C** to start. Existing outputs and intermediates count toward the target.
@@ -51,6 +51,8 @@ Shortcuts, pacing and timeouts are configurable in **Mods â†’ EMI Autocrafting â
 Storage integrations are optional. The addon supports standard shaped/shapeless recipes, plain KubeJS wrappers, and Quark mixed-material recipes. It does not run processing machines, scripted output/ingredient actions, or AE2 crafting CPU jobs. See [compatibility](docs/COMPATIBILITY.md) for supported versions and limitations.
 
 The next operation starts after the previous one is confirmed. Failed synchronization stops the batch without retrying an uncertain craft; reopen the interface before restarting.
+
+Bookwyrm lecterns and AE2 terminals collect ordinary recipes in bounded batches of up to one output stack per confirmation. A request for 20 chests crafts 20, even with enough wood for more. Matching grid ingredients stay in place; a changed recipe clears the grid in one verified operation. Recipes with returned containers or tools, and **N** single-step mode, keep one execution per confirmation.
 
 ## Development
 
