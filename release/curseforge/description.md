@@ -13,7 +13,7 @@ This is an independent **Minecraft 1.21.1 NeoForge port and derivative of [diges
 - Keep the active tree in its own collapsible **Craft batch** panel, with progress and Tree/Clear controls.
 - Advance as soon as the previous operation is confirmed, with configurable pacing.
 - Collect ordinary lectern and AE2 crafts in bounded batches of up to one output stack per confirmation, without exceeding the requested number of recipe executions.
-- Reuse matching storage-grid ingredients, or clear all leftover stacks in one verified operation when the recipe changes.
+- Reuse matching storage-grid ingredients, or clear all leftover stacks in one verified operation when the recipe changes. AE2 inserts cleared ingredients into network storage first and puts any rejected remainder in the player inventory.
 - Stop a batch with a shortcut or take over with a manual inventory click. Uncertain crafts stop with a reason and are not retried automatically.
 
 ## Requirements and installation

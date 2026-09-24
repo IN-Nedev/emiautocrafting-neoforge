@@ -2,6 +2,18 @@
 
 ## Release verification
 
+Version **2.0.0-beta.12** adds network-first AE2 grid clearing to the beta 11 compatibility fixes.
+
+- **57 unit tests passed** with no failures.
+- **Six packaged-JAR gameplay scenarios passed** with AE2WTLib loaded in disposable integrated-server worlds: named Sophisticated upgrades, a Crafting Station chain, Bookwyrm returned buckets, and three AE2 grid-clear capacity cases.
+- With free AE2 storage, all 288 cleared cobblestone went into the network and none into the player inventory. With a full cell, all 288 went into the player inventory. With partial capacity, 64 went into AE2 and the other 224 went into the player inventory. Each case completed its requested craft and conserved all materials.
+- The wireless menu class is recognized and inherits AE2 crafting-terminal behavior. The wireless menu itself has not yet been opened in the automated gameplay harness.
+- Every game test launched with master sound at zero. The main Prism instance and personal worlds were not used by the harness.
+
+Release SHA-256: `313dcac440329d89fe117bbc3f4e51d68fb8b235ae665849561d2c993160097f`. The JAR contains 45 production classes and no test or third-party mod classes.
+
+## Previous build: beta 11
+
 Version **2.0.0-beta.11** uses Minecraft 1.21.1, NeoForge 21.1.249, Java 21, EMI 1.1.24+1.21.1, AE2 19.2.17, AE2WTLib 19.5.1 and Sophisticated Core 1.4.90.
 
 - **57 unit tests passed** with no failures.

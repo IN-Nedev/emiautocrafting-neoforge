@@ -345,6 +345,21 @@ final class StorageCrafting {
     }
 
     void clearGrid(List<Move> moves) {
+        if (kind == Kind.AE2) {
+            try {
+                Class<?> type = Class.forName("appeng.helpers.InventoryAction");
+                Object action = type.getField("PICKUP_OR_SET_DOWN").get(null);
+                for (Move move : moves) {
+                    click(move.source());
+                    // AE2 inserts as much of the carried stack as it can. Its server menu
+                    // keeps any rejected remainder on the cursor for the reserved player slot.
+                    send(construct("appeng.core.network.serverbound.MEInteractionPacket",
+                            new Class<?>[]{int.class, long.class, type}, menu.containerId, -1L, action));
+                    click(move.destination());
+                }
+                return;
+            } catch (ReflectiveOperationException error) { throw incompatible(error); }
+        }
         for (Move move : moves) { click(move.source()); click(move.destination()); }
     }
 

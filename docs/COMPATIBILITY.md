@@ -29,7 +29,7 @@ Stack upgrades are supported during repeated crafting, including when a source d
 
 ## Execution limits
 
-- Start with an empty cursor. Vanilla grids must also be empty. Supported storage grids can reuse matching ingredients or return the whole grid to the player inventory, provided there is room. Storage crafting requires an empty player inventory slot for collecting output.
+- Start with an empty cursor. Vanilla grids must also be empty. Supported storage grids can reuse matching ingredients. When clearing AE2 grids, the addon inserts each stack into the network first and puts rejected overflow in a reserved player-inventory slot. Other storage grids return ingredients to the player inventory. Clearing still reserves room for the entire grid before starting. Storage crafting requires an empty player inventory slot for collecting output.
 - Space is reserved for outputs and returned containers before inputs are consumed. A nearly full inventory can be refused even if the craft would free a slot.
 - Outputs remain in the player inventory. Complete AE2 storage cells do not stack; a 200-cell request will stop when inventory space runs out. Automatic output deposit is not supported.
 - Concurrent changes to the ingredients, output or returned items can stop confirmation. Changes to unrelated stored items do not block the current operation.

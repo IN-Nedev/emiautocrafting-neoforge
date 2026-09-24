@@ -52,7 +52,7 @@ Storage integrations are optional. The addon supports standard shaped/shapeless 
 
 The next operation starts after the previous one is confirmed. Failed synchronization stops the batch without retrying an uncertain craft; reopen the interface before restarting.
 
-Bookwyrm lecterns and AE2 terminals collect ordinary recipes in bounded batches of up to one output stack per confirmation. A request for 20 chests crafts 20, even with enough wood for more. Matching grid ingredients stay in place; a changed recipe clears the grid in one verified operation. Recipes with returned containers or tools, and **N** single-step mode, keep one execution per confirmation.
+Bookwyrm lecterns and AE2 terminals collect ordinary recipes in bounded batches of up to one output stack per confirmation. A request for 20 chests crafts 20, even with enough wood for more. Matching grid ingredients stay in place; a changed recipe clears the grid in one verified operation. AE2 returns cleared ingredients to the network first and puts any rejected remainder in the player inventory. Recipes with returned containers or tools, and **N** single-step mode, keep one execution per confirmation.
 
 AE2 also batches recipes using intermediates in your player inventory, loading the required quantities into its crafting grid. Outputs go into your inventory. Non-stackable items such as complete ME storage cells need one slot each, so large requests stop when there is no room; they are not automatically deposited into connected storage.
 

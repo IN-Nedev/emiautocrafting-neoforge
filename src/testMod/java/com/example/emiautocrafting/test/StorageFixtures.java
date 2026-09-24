@@ -115,6 +115,18 @@ final class StorageFixtures {
                 if ((long) call(storage, "insert", key, (long) stack.getCount(), mode, source) != stack.getCount())
                     throw new IllegalStateException("Could not seed finite AE2 cell");
             }
+            if (scenario.endsWith("grid_overflow") || scenario.endsWith("grid_partial_overflow")) {
+                Object filler = call(type("appeng.api.stacks.AEItemKey"), "of", new ItemStack(Items.DIRT));
+                for (int attempts = 0; attempts < 1000; attempts++) {
+                    long inserted = (long) call(storage, "insert", filler, 64L, mode, source);
+                    if (inserted == 0) break;
+                    if (attempts == 999) throw new IllegalStateException("Could not fill finite AE2 cell");
+                }
+                if (scenario.endsWith("grid_partial_overflow")) {
+                    long freed = (long) call(storage, "extract", filler, 128L, mode, source);
+                    if (freed != 128L) throw new IllegalStateException("Could not free partial AE2 cell capacity");
+                }
+            }
             call(storage, "persist");
             Object drive = level.getBlockEntity(CHEST);
             call(call(drive, "getInternalInventory"), "setItemDirect", 0, cell);
@@ -250,7 +262,22 @@ final class StorageFixtures {
             long logs=amount(player,scenario,Items.OAK_LOG), planks=amount(player,scenario,Items.OAK_PLANKS), cobble=amount(player,scenario,Items.COBBLESTONE);
             boolean pass=logs==(full?32:reuse?47:27) && planks==(full?0:20) && cobble==(reuse?0:288);
             if (full) pass &= amount(player,scenario,Items.STONE)==35*64;
-            return (pass?"PASS ":"FAIL ")+scenario+" conservation logs="+logs+" planks="+planks+" cobble="+cobble;
+            String placement = "";
+            if (scenario.equals("storage_ae2_grid_clear") || scenario.equals("storage_ae2_grid_overflow")
+                    || scenario.equals("storage_ae2_grid_partial_overflow")) {
+                Object cell = call(player.serverLevel().getBlockEntity(CHEST), "getOriginalCellInventory", 0);
+                Object available = call(cell, "getAvailableStacks");
+                Object key = call(type("appeng.api.stacks.AEItemKey"), "of", new ItemStack(Items.COBBLESTONE));
+                long networkCobble = (long) call(available, "get", key);
+                long playerCobble = player.getInventory().items.stream().filter(stack -> stack.is(Items.COBBLESTONE))
+                        .mapToLong(ItemStack::getCount).sum();
+                pass &= scenario.endsWith("partial_overflow") ? networkCobble > 0 && networkCobble < 288
+                        && playerCobble == 288 - networkCobble
+                        : scenario.endsWith("overflow") ? networkCobble == 0 && playerCobble == 288
+                        : networkCobble == 288 && playerCobble == 0;
+                placement = " networkCobble=" + networkCobble + " playerCobble=" + playerCobble;
+            }
+            return (pass?"PASS ":"FAIL ")+scenario+" conservation logs="+logs+" planks="+planks+" cobble="+cobble+placement;
         }
         if (scenario.contains("_cap_")) {
             long chests = amount(player, scenario, Items.CHEST), planks = amount(player, scenario, Items.OAK_PLANKS);

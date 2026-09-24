@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0-beta.12
+
+- Return leftover AE2 crafting-grid materials to network storage first, placing only rejected overflow into the player inventory.
+- Verify both network insertion and full-network fallback without losing ingredients.
+
 ## 2.0.0-beta.11
 
 - Recognize AE2WTLib wireless crafting terminals as AE2 crafting menus, so stored materials are included in the batch plan.
