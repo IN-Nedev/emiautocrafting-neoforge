@@ -11,13 +11,15 @@ Minecraft 1.21.1, Java 21, NeoForge 21.1.249+ within the 21.1 series, and EMI 1.
 | Ars Nouveau Bookwyrm crafting lectern | 5.13.1 | Player inventory and linked storage |
 | AE2 crafting terminal | 19.2.17 | Player inventory and stored item quantities |
 
-The storage integrations are optional and are not bundled. Crafting Station tests include Sophisticated Storage chests, hidden source slots and oversized stacks. The wireless AE2 crafting terminal uses the same adapter but has not been separately runtime-tested.
+The storage integrations are optional and are not bundled. Crafting Station tests include Sophisticated Storage chests, hidden source slots and oversized stacks. AE2WTLib 19.5.1 wireless crafting terminals use the same AE2 adapter. Their `WCTMenu` inherits AE2 crafting-terminal behavior and is explicitly recognized, though a wireless menu has not yet been exercised in the gameplay harness.
 
 ## Recipes and quantities
 
 Standard shaped/shapeless recipes use their real ingredient matching, assembled output and returned-item rules. Plain KubeJS shaped/shapeless wrappers are accepted when they have no scripted ingredient actions or output modifiers.
 
 Quark 4.1-482 (Zeta 1.1-40) mixed-material crafting recipes and exclusion wrappers around supported recipes are also recognized. Mixed recipes expose their actual material tag to EMI instead of a placeholder wood. Ingredient selection must pass Quark's own matcher and resolve to the selected recipe; a combination that instead makes a variant chest is rejected before items move. Supply a valid mixture or select another chest recipe.
+
+Sophisticated Core 1.4.90 next-tier upgrade recipes preserve all components from the previous upgrade. A generic upgrade target counts configured copies of that output, and each such craft is confirmed individually so different settings cannot be mixed into a batch.
 
 Existing outputs and intermediates count toward the requested total. Recipes are executed in whole batches, so surplus output is retained. Planning requires enough accessible base materials for the remaining tree.
 

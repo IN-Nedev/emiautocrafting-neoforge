@@ -111,6 +111,7 @@ public class RuntimeTests {
             for (String supply : List.of("only", "mixed", "partial"))
                 CASES.add(new Scenario("storage_ae2_grid_player_"+supply, "chest", Items.CHEST, 20, 20, null, List.of(), false));
             CASES.add(new Scenario("storage_ae2_grid_player_smallstacks", "snow_block", Items.SNOW_BLOCK, 20, 20, null, List.of(), false));
+            CASES.add(new Scenario("storage_ae2_upgrade_named", "sophisticatedstorage:advanced_void_upgrade", null, 2, 2, null, List.of(), false));
             for (String menu : List.of("ae2", "lectern"))
                 {
                     CASES.add(new Scenario("storage_"+menu+"_cells200", "ae2:network/cells/item_storage_cell_1k", null, 200, 0, "space", List.of(), false));

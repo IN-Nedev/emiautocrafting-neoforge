@@ -2,6 +2,18 @@
 
 ## Release verification
 
+Version **2.0.0-beta.11** uses Minecraft 1.21.1, NeoForge 21.1.249, Java 21, EMI 1.1.24+1.21.1, AE2 19.2.17, AE2WTLib 19.5.1 and Sophisticated Core 1.4.90.
+
+- **57 unit tests passed** with no failures.
+- **Nine packaged-JAR gameplay scenarios passed** in disposable integrated-server worlds with AE2WTLib loaded. The cases cover Crafting Station with a Sophisticated chest, the Bookwyrm lectern, AE2 stock and shortages, and a two-item Advanced Void Upgrade craft.
+- The upgrade scenario started with two named Void Upgrades and precisely enough AE2-stored diamonds, gold and redstone. It produced two named Advanced Void Upgrades in two confirmations, with all starting materials consumed and no duplicate crafts.
+- The AE2WTLib wireless menu class was inspected and explicitly recognized. The wireless menu itself was not opened in the gameplay harness; that interaction still needs a live wireless-terminal check.
+- Every game test launched with master sound at zero. The main Prism instance and personal worlds were not used by the harness.
+
+Release SHA-256: `d778f1d7ca52d788bc67a181e29b860dff9a9cc8c3a0a2fb83c19ae78d2cec13`. The JAR contains 45 production classes and no test or third-party mod classes.
+
+## Previous release: beta 10
+
 Version **2.0.0-beta.10** uses Minecraft 1.21.1, NeoForge 21.1.249, Java 21, EMI 1.1.24+1.21.1, AE2 19.2.17 and Ars Nouveau 5.13.1.
 
 - **57 unit tests passed.** New cases cover player ingredients split across repeated grid slots, partial and uneven grids, insufficient balanced supply, and 16-item ingredient stack limits.

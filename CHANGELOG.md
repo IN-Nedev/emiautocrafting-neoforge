@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-beta.11
+
+- Recognize AE2WTLib wireless crafting terminals as AE2 crafting menus, so stored materials are included in the batch plan.
+- Support Sophisticated Core next-tier upgrade recipes, preserving settings from the previous upgrade and counting configured outputs toward the requested total.
+- Report the installed addon version accurately in the startup log.
+
 ## 2.0.0-beta.10
 
 - Batch AE2 recipes that use intermediate ingredients in the player inventory by loading enough material into each crafting slot before collecting output.

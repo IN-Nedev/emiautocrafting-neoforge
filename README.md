@@ -46,9 +46,9 @@ Shortcuts, pacing and timeouts are configurable in **Mods → EMI Autocrafting �
 - Vanilla crafting tables and the player's 2×2 grid.
 - Crafting Station and its adjacent-inventory tabs, including Sophisticated Storage chests.
 - Ars Nouveau storage lecterns with the Bookwyrm crafting upgrade and linked inventories.
-- Applied Energistics 2 crafting terminals, using stored items.
+- Applied Energistics 2 crafting terminals, including AE2WTLib wireless crafting terminals, using stored items.
 
-Storage integrations are optional. The addon supports standard shaped/shapeless recipes, plain KubeJS wrappers, and Quark mixed-material recipes. It does not run processing machines, scripted output/ingredient actions, or AE2 crafting CPU jobs. See [compatibility](docs/COMPATIBILITY.md) for supported versions and limitations.
+Storage integrations are optional. The addon supports standard shaped/shapeless recipes, plain KubeJS wrappers, Quark mixed-material recipes, and Sophisticated Core next-tier upgrade recipes that copy settings from the previous upgrade. It does not run processing machines, scripted output/ingredient actions, or AE2 crafting CPU jobs. See [compatibility](docs/COMPATIBILITY.md) for supported versions and limitations.
 
 The next operation starts after the previous one is confirmed. Failed synchronization stops the batch without retrying an uncertain craft; reopen the interface before restarting.
 

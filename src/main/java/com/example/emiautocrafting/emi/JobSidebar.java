@@ -58,7 +58,7 @@ public final class JobSidebar implements EmiPlugin {
         try {
             if (preview == null || preview.menu() != screen.getMenu()) preview = new MenuPort(screen, EmiBridge.freeze());
             var stock = preview.previewStock();
-            obtained = stock.getOrDefault(new StackKey(tracked.goal.ingredient.getEmiStacks().getFirst().getItemStack()), 0L);
+            obtained = preview.targetCount(stock);
             return new EmiPlayerInventory(stock.entrySet().stream().map(e -> EmiStack.of(e.getKey().stack()).setAmount(e.getValue())).toList());
         } catch (IllegalArgumentException | ArithmeticException error) { return fallback; }
     }

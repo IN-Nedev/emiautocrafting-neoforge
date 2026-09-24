@@ -49,7 +49,7 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         this.single = single;
         storage = StorageCrafting.find(menu);
         if (storage == null && menu.getClass() != CraftingMenu.class && menu.getClass() != InventoryMenu.class)
-            throw new IllegalArgumentException("Open a crafting table, Crafting Station, Bookwyrm lectern or AE2 crafting terminal");
+            throw new IllegalArgumentException("Open a crafting table, Crafting Station, Bookwyrm lectern or AE2 crafting terminal (including wireless)");
         gridSize = storage != null || menu instanceof CraftingMenu ? 3 : 2; gridEnd = gridSize * gridSize;
         if (storage == null) {
             int start = gridSize == 3 ? 10 : 9;
@@ -82,6 +82,7 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
     }
     private Map<StackKey, Long> stock() { return stock(new MenuSnapshot(0, menu.containerId, slots(), menu.getCarried())); }
     public Map<StackKey, Long> previewStock() { return stock(); }
+    public long targetCount(Map<StackKey, Long> stock) { return EmiBridge.targetCount(tree, stock); }
     public JobController.Decision<Operation> plan() {
         if (!menu.getCarried().isEmpty()) return JobController.Decision.blocked("Put the cursor stack away before crafting");
         if (!initialized) return JobController.Decision.ready(new Operation(Kind.SYNC, null, -1, null, stock(), slots(), "Checking inventory", 1, new StockScope<>(Set.of())));
@@ -103,7 +104,7 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
             if (storage.mergeDestination(index) >= 0)
                 return JobController.Decision.ready(new Operation(Kind.CLEAR, null, index, stock, stock, slots(), "Stacking crafted items", 1, scopeFor(menu.getSlot(index).getItem())));
         }
-        long current = stock.getOrDefault(new StackKey(tree.output().getItemStack()), 0L);
+        long current = targetCount(stock);
         JobSidebar.progress(tree.tree(), current);
         if (current >= tree.total()) return JobController.Decision.completedResult();
         for (int i : grid) {
@@ -199,9 +200,9 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
             throw new IllegalArgumentException("Another recipe matches this grid; resolve the recipe conflict first");
         ItemStack output = raw.assemble(input, mc.level.registryAccess());
         ItemStack advertised = recipe.getOutputs().getFirst().getItemStack();
-        if (!ItemStack.matches(output, advertised) || output.isEmpty()) throw new IllegalArgumentException("Recipe output differs from EMI's deterministic output");
+        if (!CraftingCompatibility.matchesPreview(raw, output, advertised) || output.isEmpty()) throw new IllegalArgumentException("Recipe output differs from EMI's deterministic output");
         NonNullList<ItemStack> remainders = raw.getRemainingItems(input);
-        int batches = storage != null && !single && remainders.stream().allMatch(ItemStack::isEmpty)
+        int batches = storage != null && !single && !CraftingCompatibility.copiesUpgradeSettings(raw) && remainders.stream().allMatch(ItemStack::isEmpty)
                 ? storage.batchLimit(used, step.available(), grid, output, step.batches()) : 1;
         ItemStack collected = output.copyWithCount(output.getCount() * batches);
         Map<StackKey, Long> expected = new LinkedHashMap<>(before);

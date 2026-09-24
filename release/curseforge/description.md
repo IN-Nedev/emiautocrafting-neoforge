@@ -31,11 +31,11 @@ The addon runs on the client and is not required on a dedicated server. EMI's se
 - Vanilla crafting tables and the player's 2×2 crafting grid.
 - **Crafting Station**, including inventories exposed by the station's adjacent-storage tabs.
 - **Ars Nouveau Bookwyrm storage lecterns** with the crafting upgrade and linked inventories.
-- **Applied Energistics 2 crafting terminals**, using actual stored materials.
+- **Applied Energistics 2 crafting terminals**, including AE2WTLib wireless crafting terminals, using actual stored materials.
 
 These integrations are optional and are not bundled. Runtime coverage uses Crafting Station **2.1.1**, Ars Nouveau **5.13.1**, and AE2 **19.2.17**, including Crafting Station with Sophisticated Storage chests. See the [test report](https://github.com/IN-Nedev/emiautocrafting-neoforge/blob/main/docs/TEST-REPORT.md) for the exact coverage.
 
-AE2 support performs immediate crafting from stored items; it does not create patterns or submit crafting CPU jobs. The wireless crafting terminal is recognized but has not been separately runtime-tested.
+AE2 support performs immediate crafting from stored items; it does not create patterns or submit crafting CPU jobs. AE2WTLib 19.5.1 wireless crafting terminals are recognized through their AE2 crafting-menu subclass; the wireless menu itself has not yet been separately gameplay-tested. Sophisticated Core next-tier upgrade recipes copy their saved settings and are crafted one at a time.
 
 ## Getting started
 
@@ -51,7 +51,7 @@ The shortcuts are configurable under **Mods → EMI Autocrafting → Config**. T
 
 ## Current beta limits
 
-This release supports ordinary shaped/shapeless crafting recipes, plain KubeJS wrappers without scripted ingredient actions or output modifiers, and reviewed Quark mixed-material recipes and exclusion wrappers. Processing machines, arbitrary custom benches, dynamic/chance-based recipes, and network crafting CPU jobs are outside its scope.
+This release supports ordinary shaped/shapeless crafting recipes, plain KubeJS wrappers without scripted ingredient actions or output modifiers, reviewed Quark mixed-material recipes and exclusion wrappers, and Sophisticated Core next-tier upgrade recipes. Processing machines, arbitrary custom benches, dynamic/chance-based recipes, and network crafting CPU jobs are outside its scope.
 
 Choices made inside an existing tree override global recipe hearts. Removing a sidebar favourite only removes its bookmark. Clear and prepare the batch again to reset local tree choices. Supply finished ingredients for furnace and machine steps.
 

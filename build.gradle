@@ -115,7 +115,7 @@ if (project.hasProperty('storageModsDirectory')) {
         ] : [
             'craftingstationjei-*.jar', 'jei-*.jar', 'ars_nouveau-*.jar', 'curios-neoforge-*.jar',
             'geckolib-neoforge-*.jar', 'Patchouli-*.jar', 'appliedenergistics2-*.jar', 'guideme-*.jar',
-            'sophisticatedstorage-*.jar', 'sophisticatedcore-*.jar'
+            'sophisticatedstorage-*.jar', 'sophisticatedcore-*.jar', 'ae2wtlib-*.jar'
         ])
     }
     neoForge.runs.client {

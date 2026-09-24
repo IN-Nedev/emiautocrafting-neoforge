@@ -52,7 +52,7 @@ public final class EmiAutocrafting {
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, EmiAutocrafting::mouse);
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, EmiAutocrafting::scroll);
         NeoForge.EVENT_BUS.addListener(EmiAutocrafting::logout);
-        LOG.info("EMI Autocrafting 2.0.0-beta.9: Minecraft 1.21.1, NeoForge 21.1.249, EMI 1.1.24");
+        LOG.info("EMI Autocrafting {} loaded", container.getModInfo().getVersion());
     }
     public static JobController.State state() { return JOB.state(); }
     public static String status() { return JOB.message(); }

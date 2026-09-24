@@ -86,6 +86,21 @@ public final class EmiBridge {
     public static TreePlanner.Node<StackKey, EmiRecipe> project(Frozen plan, Set<StackKey> inventory) {
         return projectNode(plan.tree().goal, inventory, new HashSet<>(), 0, new int[]{0}, true);
     }
+    public static boolean targetMatches(EmiRecipe recipe, ItemStack target, ItemStack actual) {
+        if (ItemStack.isSameItemSameComponents(target, actual)) return true;
+        var raw = rawRecipe(recipe);
+        // A generic upgrade target accepts its preserved settings. An explicitly
+        // component-specific target, and every other recipe type, retain exact matching.
+        return raw != null && CraftingCompatibility.copiesUpgradeSettings(raw.value())
+                && ItemStack.isSameItem(target, actual) && recipe.getOutputs().size() == 1
+                && ItemStack.isSameItemSameComponents(target, recipe.getOutputs().getFirst().getItemStack());
+    }
+    public static long targetCount(Frozen plan, Map<StackKey, Long> inventory) {
+        long count = 0;
+        for (var entry : inventory.entrySet())
+            if (targetMatches(plan.rootRecipe(), plan.output().getItemStack(), entry.getKey().stack())) count = Math.addExact(count, entry.getValue());
+        return count;
+    }
     private static TreePlanner.Node<StackKey, EmiRecipe> projectNode(MaterialNode node, Set<StackKey> inventory,
             Set<EmiRecipe> path, int depth, int[] visits, boolean goal) {
         if (depth > 64 || ++visits[0] > 4096) throw new IllegalArgumentException("Recipe tree is too large or cyclic");
@@ -100,7 +115,7 @@ public final class EmiBridge {
         }
         for (StackKey key : inventory) {
             if (node.ingredient.getEmiStacks().stream().anyMatch(s -> goal
-                    ? s.isEqual(EmiStack.of(key.stack()), Comparison.compareComponents()) : s.isEqual(EmiStack.of(key.stack())))) keys.add(key);
+                    ? targetMatches(node.recipe, s.getItemStack(), key.stack()) : s.isEqual(EmiStack.of(key.stack())))) keys.add(key);
         }
         String label = keys.isEmpty() ? "unsupported ingredient" : keys.iterator().next().label();
         StackKey output = keys.isEmpty() ? null : keys.iterator().next();

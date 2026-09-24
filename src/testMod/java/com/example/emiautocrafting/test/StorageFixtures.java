@@ -87,6 +87,11 @@ final class StorageFixtures {
             seed.add(new ItemStack(Items.WHEAT,9)); seed.add(new ItemStack(Items.SUGAR,6)); seed.add(new ItemStack(Items.EGG,3));
         }
         if ((scenario.endsWith("cells200") || scenario.endsWith("housings200"))) seed = cellMaterials(scenario);
+        if (scenario.endsWith("upgrade_named")) {
+            ItemStack base = new ItemStack(item("sophisticatedstorage:void_upgrade"), 2);
+            base.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal("Preserved filter"));
+            seed = java.util.List.of(base, new ItemStack(Items.DIAMOND, 2), new ItemStack(Items.GOLD_INGOT, 4), new ItemStack(Items.REDSTONE, 6));
+        }
         if (scenario.contains("grid_player_")) seed = scenario.endsWith("mixed") || scenario.endsWith("partial")
                 ? java.util.List.of(new ItemStack(Items.OAK_PLANKS,64),new ItemStack(Items.OAK_PLANKS,16)) : java.util.List.of();
         var level = player.serverLevel();
@@ -181,6 +186,19 @@ final class StorageFixtures {
     }
 
     static String check(ServerPlayer player, String scenario) {
+        if (scenario.endsWith("upgrade_named")) {
+            Item upgraded = item("sophisticatedstorage:advanced_void_upgrade");
+            long produced = amount(player, scenario, upgraded);
+            boolean settings = player.getInventory().items.stream().filter(stack -> stack.is(upgraded))
+                    .allMatch(stack -> stack.getHoverName().getString().equals("Preserved filter"));
+            long base = amount(player, scenario, item("sophisticatedstorage:void_upgrade"));
+            long diamonds = amount(player, scenario, Items.DIAMOND);
+            long gold = amount(player, scenario, Items.GOLD_INGOT);
+            long redstone = amount(player, scenario, Items.REDSTONE);
+            boolean pass = produced == 2 && settings && base == 0 && diamonds == 0 && gold == 0 && redstone == 0;
+            return (pass ? "PASS " : "FAIL ") + scenario + " output=" + produced + " preservedSettings=" + settings
+                    + " base=" + base + " diamonds=" + diamonds + " gold=" + gold + " redstone=" + redstone;
+        }
         if (scenario.contains("grid_player_")) {
             boolean snow=scenario.endsWith("smallstacks");
             long output=amount(player,scenario,snow?Items.SNOW_BLOCK:Items.CHEST), left=amount(player,scenario,snow?Items.SNOWBALL:Items.OAK_PLANKS);

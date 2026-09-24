@@ -31,7 +31,8 @@ final class StorageCrafting {
         Kind kind = switch (menu.getClass().getName()) {
             case "com.leclowndu93150.craftingstationjei.menu.CraftingStationMenu" -> Kind.STATION;
             case "com.hollingsworth.arsnouveau.client.container.CraftingTerminalMenu" -> Kind.LECTERN;
-            case "appeng.menu.me.items.CraftingTermMenu", "appeng.menu.me.items.WirelessCraftingTermMenu" -> Kind.AE2;
+            case "appeng.menu.me.items.CraftingTermMenu", "appeng.menu.me.items.WirelessCraftingTermMenu",
+                    "de.mari_023.ae2wtlib.wct.WCTMenu" -> Kind.AE2;
             default -> null;
         };
         return kind == null ? null : new StorageCrafting(menu, kind);
