@@ -4,7 +4,7 @@
   "publishAfterApproval": true,
   "summary": "Craft EMI recipe trees in batches, count connected storage, and see missing materials. Supports Crafting Station, Bookwyrm lecterns and AE2 crafting terminals.",
   "releaseType": "beta",
-  "version": "2.0.0-beta.12",
+  "version": "2.0.0-beta.13",
   "minecraft": "1.21.1",
   "loader": "NeoForge",
   "java": "21",
@@ -14,8 +14,8 @@
   "requiredDependencies": {
     "emi": "1.1.24+1.21.1+neoforge"
   },
-  "artifact": "emiautocrafting-neoforge-1.21.1-2.0.0-beta.12.jar",
-  "sha256": "313dcac440329d89fe117bbc3f4e51d68fb8b235ae665849561d2c993160097f",
-  "fileId": 8962295,
-  "authorFileUrl": "https://authors.curseforge.com/#/projects/1697067/files/8962295"
+  "artifact": "emiautocrafting-neoforge-1.21.1-2.0.0-beta.13.jar",
+  "sha256": "2008f459c4e330c951d4aee6ab3e3976680b1213f64ea4fb35ceb22cc954cb7d",
+  "fileId": 8966602,
+  "authorFileUrl": "https://authors.curseforge.com/#/projects/1697067/files/8966602"
 }
