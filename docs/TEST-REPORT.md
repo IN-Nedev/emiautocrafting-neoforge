@@ -2,6 +2,18 @@
 
 ## Release verification
 
+Version **2.0.0-beta.13** fixes false AE2/AE2WTLib quantity warnings when the terminal's server-confirmed crafting slots and separately updated network repository show different moments in time.
+
+- **57 unit tests passed** with no failures.
+- **Three packaged-JAR integrated gameplay scenarios passed** with AE2WTLib 19.5.1 loaded: 192 planks in three bounded crafts, a grid clear during an injected one-item external network change, and a partially full ME cell that returned 224 overflow cobblestone to the player while storing 64.
+- **Two packaged-JAR scenarios passed on a separate loopback-only dedicated server with 300 ms added round-trip latency**, including the injected one-item network change and the 192-plank batch. The dedicated server had no EMI or production addon installed.
+- The server menu must show the exact filled recipe grid and collected output. An empty server grid and cursor confirm AE2 clearing; partial output remains unconfirmed. The test fixture verified item conservation after every scenario.
+- The AE2WTLib wireless menu shares this AE2 adapter, but opening the wireless menu itself remains a live-user test. Every automated game launch started muted and used disposable worlds.
+
+Release SHA-256: `2008f459c4e330c951d4aee6ab3e3976680b1213f64ea4fb35ceb22cc954cb7d`. The JAR contains 45 production classes and no test or third-party mod classes.
+
+## Previous build: beta 12
+
 Version **2.0.0-beta.12** adds network-first AE2 grid clearing to the beta 11 compatibility fixes.
 
 - **57 unit tests passed** with no failures.

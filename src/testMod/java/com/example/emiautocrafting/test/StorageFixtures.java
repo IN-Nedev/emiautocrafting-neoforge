@@ -31,11 +31,27 @@ final class StorageFixtures {
     }
     private static final java.util.Set<net.minecraft.world.inventory.AbstractContainerMenu> observedMenus =
             java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    private static boolean observeAe2Clear, sawAe2Grid, injectedAe2Change;
     static void observeBackgroundMetadata(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
         var server = event.getServer();
         if (!server.getWorldData().getLevelName().equals("Autocrafting verification")) return;
         for (var player : server.getPlayerList().getPlayers()) {
             var menu = player.containerMenu;
+            if (observeAe2Clear && !injectedAe2Change && menu.getClass().getName().equals("appeng.menu.me.items.CraftingTermMenu")) {
+                var grid = menu.slots.stream().filter(slot -> slot.getClass().getName().equals("appeng.menu.slot.CraftingMatrixSlot")).toList();
+                if (grid.size() == 9 && grid.stream().allMatch(slot -> slot.getItem().is(Items.COBBLESTONE))) sawAe2Grid = true;
+                if (sawAe2Grid && grid.stream().allMatch(slot -> slot.getItem().isEmpty())) {
+                    Object cell = call(player.serverLevel().getBlockEntity(CHEST), "getOriginalCellInventory", 0);
+                    Object key = call(type("appeng.api.stacks.AEItemKey"), "of", new ItemStack(Items.COBBLESTONE));
+                    Object mode = field("appeng.api.config.Actionable", "MODULATE");
+                    Object source = call(type("appeng.api.networking.security.IActionSource"), "empty");
+                    if ((long) call(cell, "insert", key, 1L, mode, source) != 1L)
+                        throw new IllegalStateException("Could not change AE2 stock during grid clearing");
+                    call(cell, "persist");
+                    injectedAe2Change = true;
+                    System.out.println("[AUTOCRAFT HARNESS] INJECT one external cobblestone during AE2 grid clear");
+                }
+            }
             if (!menu.getClass().getName().equals("com.leclowndu93150.craftingstationjei.menu.CraftingStationMenu")
                     || observedMenus.contains(menu)) continue;
             Object chest = player.serverLevel().getBlockEntity(CHEST);
@@ -66,6 +82,8 @@ final class StorageFixtures {
     static void setup(ServerPlayer player, String scenario) {
         if (!player.server.getWorldData().getLevelName().equals("Autocrafting verification"))
             throw new IllegalStateException("Storage fixtures require the disposable verification world");
+        observeAe2Clear = scenario.equals("storage_ae2_grid_background");
+        sawAe2Grid = false; injectedAe2Change = false;
         int logs = scenario.endsWith("missing") ? 1 : scenario.endsWith("batch") ? 48 : 2;
         if (scenario.endsWith("oversized")) logs = 128;
         var seed = scenario.endsWith("buckets") ? java.util.List.of(new ItemStack(Items.MILK_BUCKET), new ItemStack(Items.MILK_BUCKET),
@@ -260,10 +278,12 @@ final class StorageFixtures {
         if (scenario.contains("_grid_")) {
             boolean full=scenario.endsWith("full"), reuse=scenario.endsWith("reuse");
             long logs=amount(player,scenario,Items.OAK_LOG), planks=amount(player,scenario,Items.OAK_PLANKS), cobble=amount(player,scenario,Items.COBBLESTONE);
-            boolean pass=logs==(full?32:reuse?47:27) && planks==(full?0:20) && cobble==(reuse?0:288);
+            boolean background = scenario.equals("storage_ae2_grid_background");
+            boolean pass=logs==(full?32:reuse?47:27) && planks==(full?0:20) && cobble==(reuse?0:background?289:288);
+            if (background) pass &= injectedAe2Change;
             if (full) pass &= amount(player,scenario,Items.STONE)==35*64;
             String placement = "";
-            if (scenario.equals("storage_ae2_grid_clear") || scenario.equals("storage_ae2_grid_overflow")
+            if (scenario.equals("storage_ae2_grid_clear") || scenario.equals("storage_ae2_grid_background") || scenario.equals("storage_ae2_grid_overflow")
                     || scenario.equals("storage_ae2_grid_partial_overflow")) {
                 Object cell = call(player.serverLevel().getBlockEntity(CHEST), "getOriginalCellInventory", 0);
                 Object available = call(cell, "getAvailableStacks");
@@ -274,7 +294,7 @@ final class StorageFixtures {
                 pass &= scenario.endsWith("partial_overflow") ? networkCobble > 0 && networkCobble < 288
                         && playerCobble == 288 - networkCobble
                         : scenario.endsWith("overflow") ? networkCobble == 0 && playerCobble == 288
-                        : networkCobble == 288 && playerCobble == 0;
+                        : networkCobble == (background ? 289 : 288) && playerCobble == 0;
                 placement = " networkCobble=" + networkCobble + " playerCobble=" + playerCobble;
             }
             return (pass?"PASS ":"FAIL ")+scenario+" conservation logs="+logs+" planks="+planks+" cobble="+cobble+placement;

@@ -93,6 +93,8 @@ final class StorageCrafting {
         return switch (kind) { case STATION -> "Crafting Station inventories"; case LECTERN -> "Bookwyrm lectern storage"; case AE2 -> "AE2 stored items"; };
     }
 
+    boolean isAe2() { return kind == Kind.AE2; }
+
     Map<StackKey, Long> remoteStock() {
         Map<StackKey, Long> stock = new LinkedHashMap<>();
         if (kind == Kind.LECTERN) {

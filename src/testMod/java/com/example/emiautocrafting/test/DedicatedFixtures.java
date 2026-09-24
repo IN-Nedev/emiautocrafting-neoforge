@@ -16,7 +16,10 @@ public final class DedicatedFixtures {
     private static final Path DIRECTORY = Path.of(System.getProperty("emiautocrafting.fixtureDirectory", ".local-testing/fixture-exchange"));
 
     public DedicatedFixtures() {
-        if (Boolean.getBoolean("emiautocrafting.serverFixtures")) NeoForge.EVENT_BUS.addListener(this::tick);
+        if (Boolean.getBoolean("emiautocrafting.serverFixtures")) {
+            NeoForge.EVENT_BUS.addListener(this::tick);
+            NeoForge.EVENT_BUS.addListener(StorageFixtures::observeBackgroundMetadata);
+        }
     }
 
     static String perform(ServerPlayer player, String action, String scenario) {

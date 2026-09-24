@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0-beta.13
+
+- Confirm AE2 and AE2WTLib transfers against the server crafting grid and exact collected output, avoiding false stalls when network item counts refresh separately or other devices change stock.
+- Keep partial crafts blocked and verify grid clearing and player-stack merging through server menu snapshots.
+
 ## 2.0.0-beta.12
 
 - Return leftover AE2 crafting-grid materials to network storage first, placing only rejected overflow into the player inventory.

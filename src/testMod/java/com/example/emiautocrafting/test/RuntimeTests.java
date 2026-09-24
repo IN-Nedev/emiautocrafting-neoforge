@@ -137,6 +137,7 @@ public class RuntimeTests {
                     CASES.add(new Scenario("storage_"+menu+"_existing_total", "chest", Items.CHEST, 20, 13, null, List.of(), false));
                     CASES.add(new Scenario("storage_"+menu+"_single_step", "chest", Items.CHEST, 20, 1, null, List.of(), false));
                     CASES.add(new Scenario("storage_"+menu+"_grid_clear", "oak_planks", Items.OAK_PLANKS, 20, 20, null, List.of(), false));
+                    if (menu.equals("ae2")) CASES.add(new Scenario("storage_ae2_grid_background", "oak_planks", Items.OAK_PLANKS, 20, 20, null, List.of(), false));
                     if (menu.equals("ae2")) CASES.add(new Scenario("storage_ae2_grid_overflow", "oak_planks", Items.OAK_PLANKS, 20, 20, null, List.of(), false));
                     if (menu.equals("ae2")) CASES.add(new Scenario("storage_ae2_grid_partial_overflow", "oak_planks", Items.OAK_PLANKS, 20, 20, null, List.of(), false));
                     CASES.add(new Scenario("storage_"+menu+"_grid_reuse", "oak_planks", Items.OAK_PLANKS, 20, 20, null, List.of(), false));

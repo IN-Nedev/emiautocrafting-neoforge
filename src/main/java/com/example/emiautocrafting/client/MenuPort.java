@@ -90,7 +90,8 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
             return JobController.Decision.blocked("An ingredient slot cannot be extracted");
         Map<StackKey, Long> stock = stock();
         if (prepared != null) {
-            if (!prepared.scope().matches(prepared.before(), stock) || !matchesPreparedGrid() || !ItemStack.matches(menu.getSlot(outputSlot).getItem(), prepared.recipe().getOutputs().getFirst().getItemStack()))
+            if (!(storage != null && storage.isAe2()) && !prepared.scope().matches(prepared.before(), stock)
+                    || !matchesPreparedGrid() || !ItemStack.matches(menu.getSlot(outputSlot).getItem(), prepared.recipe().getOutputs().getFirst().getItemStack()))
                 return JobController.Decision.blocked("Storage or transferred ingredients changed; reopen the menu before retrying");
             if (!storage.readyForBatch(preparedGrid, Math.toIntExact(prepared.outstandingBatches())))
                 return JobController.Decision.blocked("Transferred ingredients no longer cover the batch; reopen the menu before retrying");
@@ -269,7 +270,7 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         sequence = EmiAutocrafting.syncSequence;
         confirmed = null;
         waitReason = "";
-        if (storage != null && operation.kind() != Kind.SYNC && !operation.scope().matches(operation.before(), stock()))
+        if (storage != null && !storage.isAe2() && operation.kind() != Kind.SYNC && !operation.scope().matches(operation.before(), stock()))
             throw new IllegalArgumentException("Connected inventory changed before the transfer; start again");
         if (operation.kind() == Kind.FILL) {
             if (!storage.fill(operation.recipe(), preparedGrid, screen, Math.toIntExact(operation.outstandingBatches()))) throw new IllegalArgumentException("Storage recipe transfer was rejected");
@@ -318,12 +319,46 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         if (operation.kind() == Kind.FILL && matchesPreparedGrid()
                 && ItemStack.matches(menu.getSlot(outputSlot).getItem(), operation.recipe().getOutputs().getFirst().getItemStack())) {
             var scope = operation.scope();
+            // AE2 synchronizes terminal slots and its stored-item repository separately.
+            // The server-confirmed grid and result prove that native filling completed.
+            if (storage.isAe2()) {
+                prepared = new Operation(Kind.CRAFT, prepared.recipe(), -1, prepared.expected(), actual,
+                        confirmed.slots(), prepared.label(), prepared.outstandingBatches(), scope);
+                return JobController.Confirmation.CONFIRMED;
+            }
             var rebased = CappedStock.afterTransfer(scope.project(operation.before()), scope.project(actual), scope.project(prepared.expected()),
                     storage.revealLimits(operation.beforeSlots(), confirmed.slots()));
             if (rebased.isPresent()) {
                 if (!scope.matches(actual, operation.before())) EmiAutocrafting.diagnostic("Verified transfer revealed previously capped storage material; rebasing the next craft");
                 prepared = new Operation(Kind.CRAFT, prepared.recipe(), -1, scope.rebase(rebased.get(), actual), actual, confirmed.slots(), prepared.label(), prepared.outstandingBatches(), scope);
                 return JobController.Confirmation.CONFIRMED;
+            }
+        }
+        if (storage != null && storage.isAe2()) {
+            if (operation.kind() == Kind.CLEAR_GRID) {
+                // AE2 accepts the cursor into network storage, then returns any rejected
+                // remainder to the player. An empty server grid and cursor prove completion.
+                if (grid.stream().anyMatch(index -> !confirmed.slots().get(index).isEmpty()))
+                    return pending("Waiting for the crafting grid to empty");
+                return JobController.Confirmation.CONFIRMED;
+            }
+            if (operation.kind() == Kind.CLEAR) {
+                if (!confirmed.slots().get(operation.clearSlot()).isEmpty())
+                    return pending("Waiting for the moved slot to empty");
+                var beforePlayer = new MenuSnapshot(0, menu.containerId, operation.beforeSlots(), ItemStack.EMPTY).stock(inventory);
+                if (!operation.scope().matches(beforePlayer, confirmed.stock(inventory)))
+                    return pending("Player inventory differs after stacking crafted items");
+                return JobController.Confirmation.CONFIRMED;
+            }
+            if (operation.kind() == Kind.CRAFT) {
+                ItemStack output = operation.recipe().getOutputs().getFirst().getItemStack();
+                ItemStack collected = output.copyWithCount(Math.toIntExact(Math.multiplyExact((long) output.getCount(), operation.outstandingBatches())));
+                // The initially empty destination is server-authoritative. Requiring the
+                // exact collected stack rejects partial batches without relying on AE2's
+                // asynchronously refreshed network totals.
+                if (!ItemStack.matches(confirmed.slots().get(operation.clearSlot()), collected))
+                    return pending("Waiting for the exact crafted output in the player inventory");
+                return finishCraft(operation, actual);
             }
         }
         if (!operation.scope().matches(operation.expected(), actual)) {
@@ -336,14 +371,16 @@ public final class MenuPort implements JobController.Port<MenuPort.Operation> {
         if (operation.kind() == Kind.CLEAR && !confirmed.slots().get(operation.clearSlot()).isEmpty()) return pending("Waiting for the moved slot to empty");
         if (operation.kind() == Kind.CLEAR_GRID && grid.stream().anyMatch(index -> !confirmed.slots().get(index).isEmpty()))
             return pending("Waiting for the crafting grid to empty");
-        if (operation.kind() == Kind.CRAFT) {
-            String fingerprint = operation.recipe().getId() + ":" + new TreeMap<>(stringStock(operation.expected()));
-            if (!visited.add(fingerprint)) return JobController.Confirmation.REJECTED;
-            hasCrafted = true;
-            prepared = null;
-            EmiAutocrafting.diagnostic("Confirmed recipe={} menu={} snapshot={} itemTypes={}",
-                    operation.recipe().getId(), menu.containerId, confirmed.sequence(), actual.size());
-        }
+        if (operation.kind() == Kind.CRAFT) return finishCraft(operation, actual);
+        return JobController.Confirmation.CONFIRMED;
+    }
+    private JobController.Confirmation finishCraft(Operation operation, Map<StackKey, Long> actual) {
+        String fingerprint = operation.recipe().getId() + ":" + new TreeMap<>(stringStock(operation.expected()));
+        if (!visited.add(fingerprint)) return JobController.Confirmation.REJECTED;
+        hasCrafted = true;
+        prepared = null;
+        EmiAutocrafting.diagnostic("Confirmed recipe={} menu={} snapshot={} itemTypes={}",
+                operation.recipe().getId(), menu.containerId, confirmed.sequence(), actual.size());
         return JobController.Confirmation.CONFIRMED;
     }
     private JobController.Confirmation pending(String reason) {
