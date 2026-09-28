@@ -3,7 +3,7 @@
   "projectId": 1697067,
   "publishAfterApproval": true,
   "summary": "Craft EMI recipe trees in batches, count connected storage, and see missing materials. Supports Crafting Station, Bookwyrm lecterns and AE2 crafting terminals.",
-  "releaseType": "beta",
+  "releaseType": "release",
   "version": "2.0.0-beta.14",
   "minecraft": "1.21.1",
   "loader": "NeoForge",
