@@ -111,6 +111,7 @@ public class RuntimeTests {
             for (String supply : List.of("only", "mixed", "partial"))
                 CASES.add(new Scenario("storage_ae2_grid_player_"+supply, "chest", Items.CHEST, 20, 20, null, List.of(), false));
             CASES.add(new Scenario("storage_ae2_grid_player_smallstacks", "snow_block", Items.SNOW_BLOCK, 20, 20, null, List.of(), false));
+            CASES.add(new Scenario("storage_ae2_preview_refresh", "oak_planks", Items.OAK_PLANKS, 40, 8, null, List.of(), false));
             CASES.add(new Scenario("storage_ae2_upgrade_named", "sophisticatedstorage:advanced_void_upgrade", null, 2, 2, null, List.of(), false));
             for (String menu : List.of("ae2", "lectern"))
                 {
@@ -161,6 +162,8 @@ public class RuntimeTests {
     private boolean reportedPath, testedControls, testedGroup, disconnecting, reloadSent;
     private boolean staleStorageInjected;
     private boolean seededGrid;
+    private boolean previewVerified;
+    private int previewPhase;
     private long craftStarted;
     private java.util.concurrent.CompletableFuture<?> fixture;
     public RuntimeTests(net.neoforged.bus.api.IEventBus bus){
@@ -319,6 +322,9 @@ public class RuntimeTests {
                         MC.gameMode.handleInventoryMouseClick(id,37,0,ClickType.PICKUP,MC.player);
                     }
                 }
+                if (c.name().endsWith("preview_refresh") && !previewVerified) {
+                    stage = 5; previewPhase = 0; at = ticks; return;
+                }
                 if (!testedControls) { testedControls=true; testControls(recipe); }
                 int startKey=c.name().endsWith("single_step")?78:67;
                 int startMods=c.name().endsWith("single_step")?0:2;
@@ -336,6 +342,22 @@ public class RuntimeTests {
                 stage=3;at=ticks;craftStarted=System.nanoTime();
             }else if(stage==2&&ticks-at>100&&EmiBridge.screen()==null){
                 stage=1;at=ticks-51;
+            }else if(stage==5 && ticks-at>12){
+                // No player inventory changes, manual updateSynthetic, or forceRecalculate:
+                // the production tick and AE2 repository hook must refresh the displayed count.
+                var obtainedField = com.example.emiautocrafting.emi.JobSidebar.class.getDeclaredField("obtained");
+                obtainedField.setAccessible(true);
+                long obtained = obtainedField.getLong(null), expected = previewPhase == 1 || previewPhase == 3 ? 36 : 32;
+                if (obtained != expected || MC.player.getInventory().items.stream().anyMatch(s -> !s.isEmpty()))
+                    throw new IllegalStateException("Preview phase " + previewPhase + ": expected " + expected + ", got " + obtained);
+                report("PASS AE2 stock preview phase=" + previewPhase + " obtained=" + obtained + "; player inventory unchanged");
+                if (previewPhase == 0 || previewPhase == 2) {
+                    if (previewPhase == 2) { com.example.emiautocrafting.EmiAutocraftingConfig.GROUPED_JOB.set(false); MC.player.closeContainer(); MC.setScreen(null); }
+                    fixtureAction("previewAdd", c.name()).join();
+                    if (previewPhase == 2) fixtureAction("open", c.name()).join();
+                } else if (previewPhase == 1 || previewPhase == 3) fixtureAction("previewRemove", c.name()).join();
+                else { com.example.emiautocrafting.EmiAutocraftingConfig.GROUPED_JOB.set(true); previewVerified = true; stage = 2; at = ticks - 21; return; }
+                previewPhase++; at=ticks;
             }else if(stage==3){
                 if (!testedGroup && ticks-at>2 && com.example.emiautocrafting.emi.JobSidebar.bounds(MC.screen)!=null) {
                     testedGroup=true; testGroup(); screenshot("grouped-batch");

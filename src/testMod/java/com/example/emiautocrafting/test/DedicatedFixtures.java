@@ -30,6 +30,8 @@ public final class DedicatedFixtures {
             case "setup" -> { StorageFixtures.setup(player, scenario); yield "ready"; }
             case "open" -> { StorageFixtures.open(player); yield "opened"; }
             case "grid" -> { StorageFixtures.seedGrid(player, scenario); yield "seeded"; }
+            case "previewAdd" -> { StorageFixtures.changePreviewStock(player, true); yield "added"; }
+            case "previewRemove" -> { StorageFixtures.changePreviewStock(player, false); yield "removed"; }
             case "check" -> StorageFixtures.check(player, scenario);
             default -> throw new IllegalArgumentException("Unknown fixture action");
         };

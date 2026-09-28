@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0-beta.14
+
+- Refresh the batch inventory preview when an AE2 or AE2WTLib terminal opens and when its stored-item updates arrive, without needing a manual item transfer.
+- Keep storage-aware previews available when the grouped batch panel is disabled.
+
 ## 2.0.0-beta.13
 
 - Confirm AE2 and AE2WTLib transfers against the server crafting grid and exact collected output, avoiding false stalls when network item counts refresh separately or other devices change stock.

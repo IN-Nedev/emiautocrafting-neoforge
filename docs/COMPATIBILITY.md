@@ -23,6 +23,8 @@ Sophisticated Core 1.4.90 next-tier upgrade recipes preserve all components from
 
 Existing outputs and intermediates count toward the requested total. Recipes are executed in whole batches, so surplus output is retained. Planning requires enough accessible base materials for the remaining tree.
 
+AE2 stock previews refresh when a terminal opens and when network item updates arrive, without moving an item through the player inventory. This also applies with the grouped batch panel disabled.
+
 Armour, offhand, locked slots and AE2 craftable-only patterns are excluded. Vanilla tables do not gain nearby-storage access. Crafting Station reports the quantities exposed by its native slots; capped oversized stacks can make the initial plan see less than the chest contains. Material revealed during transfer is accounted for before output pickup.
 
 Stack upgrades are supported during repeated crafting, including when a source drops below its displayed stack limit. Crafting Station transfers keep sources occupied when returning unused ingredients, preventing Sophisticated Storage from redirecting those items into another upgraded stack. The initial displayed-count limitation still applies.

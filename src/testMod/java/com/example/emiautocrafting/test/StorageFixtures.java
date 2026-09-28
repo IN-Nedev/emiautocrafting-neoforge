@@ -105,6 +105,7 @@ final class StorageFixtures {
             seed.add(new ItemStack(Items.WHEAT,9)); seed.add(new ItemStack(Items.SUGAR,6)); seed.add(new ItemStack(Items.EGG,3));
         }
         if ((scenario.endsWith("cells200") || scenario.endsWith("housings200"))) seed = cellMaterials(scenario);
+        if (scenario.endsWith("preview_refresh")) seed = java.util.List.of(new ItemStack(Items.OAK_PLANKS, 32), new ItemStack(Items.OAK_LOG, 2));
         if (scenario.endsWith("upgrade_named")) {
             ItemStack base = new ItemStack(item("sophisticatedstorage:void_upgrade"), 2);
             base.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, net.minecraft.network.chat.Component.literal("Preserved filter"));
@@ -178,6 +179,18 @@ final class StorageFixtures {
         }
     }
 
+    static void changePreviewStock(ServerPlayer player, boolean add) {
+        if (!player.server.getWorldData().getLevelName().equals("Autocrafting verification"))
+            throw new IllegalStateException("Preview fixtures require a disposable test world");
+        Object cell = call(player.serverLevel().getBlockEntity(CHEST), "getOriginalCellInventory", 0);
+        Object key = call(type("appeng.api.stacks.AEItemKey"), "of", new ItemStack(Items.OAK_PLANKS));
+        Object mode = field("appeng.api.config.Actionable", "MODULATE");
+        Object source = call(type("appeng.api.networking.security.IActionSource"), "empty");
+        long changed = (long) call(cell, add ? "insert" : "extract", key, 4L, mode, source);
+        if (changed != 4) throw new IllegalStateException("Could not change network preview stock");
+        call(cell, "persist");
+    }
+
     static void open(ServerPlayer player) {
         Object host = player.serverLevel().getBlockEntity(TABLE);
         Object part = call(host, "getPart", Direction.NORTH);
@@ -216,6 +229,10 @@ final class StorageFixtures {
     }
 
     static String check(ServerPlayer player, String scenario) {
+        if (scenario.endsWith("preview_refresh")) {
+            long planks = amount(player, scenario, Items.OAK_PLANKS), logs = amount(player, scenario, Items.OAK_LOG);
+            return (planks == 40 && logs == 0 ? "PASS " : "FAIL ") + scenario + " conservation planks=" + planks + " logs=" + logs;
+        }
         if (scenario.endsWith("upgrade_named")) {
             Item upgraded = item("sophisticatedstorage:advanced_void_upgrade");
             long produced = amount(player, scenario, upgraded);

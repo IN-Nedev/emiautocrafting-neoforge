@@ -76,6 +76,7 @@ public final class EmiAutocrafting {
     private static void tick(ClientTickEvent.Post event) {
         ticks++;
         Minecraft mc = Minecraft.getInstance();
+        JobSidebar.tick();
         if (mc.screen == null || mc.player == null || (quarantined != null && mc.player.containerMenu != quarantined)) {
             quarantined = null; mustReopenInventory = false;
         }

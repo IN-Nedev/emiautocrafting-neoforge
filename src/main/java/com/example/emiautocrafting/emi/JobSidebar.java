@@ -29,6 +29,8 @@ public final class JobSidebar implements EmiPlugin {
     private static int page;
     private static long obtained;
     private static MenuPort preview;
+    private static net.minecraft.world.inventory.AbstractContainerMenu refreshedMenu;
+    private static boolean storageRefreshPending;
 
     public void register(EmiRegistry registry) {
         QuarkRecipes.register(registry);
@@ -39,12 +41,25 @@ public final class JobSidebar implements EmiPlugin {
         });
     }
     public static void track(MaterialTree tree) {
-        if (tree != tracked) { tracked = tree; entries = List.of(); obtained = 0; page = 0; collapsed = false; preview = null; }
+        if (tree != tracked) { tracked = tree; entries = List.of(); obtained = 0; page = 0; collapsed = false; preview = null; refreshedMenu = null; storageRefreshPending = true; }
     }
-    public static void reset() { tracked = null; entries = List.of(); preview = null; }
+    public static void reset() { tracked = null; entries = List.of(); preview = null; refreshedMenu = null; storageRefreshPending = false; }
     public static void progress(MaterialTree tree, long count) { if (tree == tracked) obtained = count; }
-    public static boolean grouped() {
-        return tracked != null && BoM.tree == tracked && BoM.craftingMode && EmiAutocraftingConfig.GROUPED_JOB.get();
+    private static boolean activeTree() { return tracked != null && BoM.tree == tracked && BoM.craftingMode; }
+    public static boolean grouped() { return activeTree() && EmiAutocraftingConfig.GROUPED_JOB.get(); }
+    public static void storageChanged() { storageRefreshPending = true; }
+    public static void tick() {
+        var screen = EmiBridge.screen();
+        if (!activeTree() || screen == null || Minecraft.getInstance().player == null) {
+            refreshedMenu = null;
+            return;
+        }
+        if (!storageRefreshPending && refreshedMenu == screen.getMenu()) return;
+        storageRefreshPending = false;
+        refreshedMenu = screen.getMenu();
+        // EMI normally invalidates this preview only when the player's own inventory
+        // changes. AE2 stock arrives independently, often after the menu has opened.
+        EmiFavorites.updateSynthetic(EmiPlayerInventory.of(Minecraft.getInstance().player));
     }
     public static void capture() {
         if (!grouped()) return;
@@ -52,7 +67,7 @@ public final class JobSidebar implements EmiPlugin {
         EmiFavorites.syntheticFavorites.clear();
     }
     public static EmiPlayerInventory inventory(EmiPlayerInventory fallback) {
-        if (!grouped()) return fallback;
+        if (!activeTree()) return fallback;
         var screen = EmiBridge.screen();
         if (screen == null) return fallback;
         try {

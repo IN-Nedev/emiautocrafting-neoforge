@@ -2,6 +2,19 @@
 
 ## Release verification
 
+Version **2.0.0-beta.14** refreshes the batch stock preview when an AE2 terminal opens and when its client repository receives network inventory updates. AE2WTLib wireless terminals share that repository.
+
+- **57 unit tests passed** with no failures.
+- The packaged-JAR AE2 preview regression passed with an empty, unchanged player inventory: the displayed target stock followed **32 → 36 → 32** after server-side network insertions and extractions. Reopening the terminal after a stock change also displayed the correct quantity, including with the grouped batch panel disabled.
+- The same regression failed against beta 13 on initial opening: expected 32 stored planks, displayed 0.
+- The preview scenario then completed its requested craft and verified conservation of all 40 planks. The existing AE2 grid-clear scenario with an unrelated network update also passed.
+- A packaged-JAR launch **without AE2 installed** passed startup and vanilla recursive crafting, verifying that the optional repository hook does not make AE2 required.
+- The automated preview test uses AE2's wired crafting terminal; opening the AE2WTLib wireless menu itself remains a live-user test. No new dedicated-server benchmark was run for this preview change. All game tests started muted and used disposable worlds.
+
+Release SHA-256: `315cb9434fb1e2c176290b708353a27440fbc31e489e32110dd2732014d1665a`. The JAR contains 46 production classes and no test or third-party mod classes.
+
+## Previous build: beta 13
+
 Version **2.0.0-beta.13** fixes false AE2/AE2WTLib quantity warnings when the terminal's server-confirmed crafting slots and separately updated network repository show different moments in time.
 
 - **57 unit tests passed** with no failures.

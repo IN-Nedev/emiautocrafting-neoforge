@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "ClientPacketListenerMixin",
+    "Ae2RepoMixin",
     "CraftingStationMenuMixin",
     "EmiFavoritesMixin",
     "RecipeBookComponentAccessor"
